@@ -145,6 +145,30 @@
     .campaign-rating { color: var(--o); font-size: 0.78rem; font-weight: 750; white-space: nowrap; }
     .campaign-info p, .campaign-result p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
 
+    .online-info {
+      margin: -4px 0 18px;
+      padding: 13px 15px;
+      display: grid;
+      gap: 9px;
+      border: 1px solid #82d9c344;
+      border-radius: 12px;
+      background: #82d9c30b;
+    }
+
+    .online-info[hidden] { display: none; }
+    .online-info > p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+    .online-room { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+    .online-room > span { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+    .online-room output { color: var(--o); font-size: 1.05rem; font-weight: 900; letter-spacing: 0.16em; }
+    .online-room .reset { margin-left: auto; }
+    .online-error {
+      padding: 9px 11px;
+      border: 1px solid #ff887d66;
+      border-radius: 9px;
+      background: #ff887d12;
+      color: #ffb0a8 !important;
+    }
+
     .campaign-result {
       margin-top: 16px;
       padding: 17px;

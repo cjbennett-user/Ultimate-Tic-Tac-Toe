@@ -91,14 +91,9 @@
       background: linear-gradient(120deg, #242c3d, #1d2434);
     }
 
-    .mode:focus-visible, .close:focus-visible {
+    .mode:focus-visible {
       outline: 3px solid var(--accent);
       outline-offset: 3px;
-    }
-
-    .mode:disabled {
-      cursor: not-allowed;
-      opacity: 0.75;
     }
 
     .icon {
@@ -123,19 +118,6 @@
     .mode-description { color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
     .arrow { color: var(--muted); font-size: 1.4rem; }
 
-    .coming-soon {
-      justify-self: start;
-      margin-top: 2px;
-      padding: 3px 7px;
-      border-radius: 5px;
-      background: #82d9c31a;
-      color: var(--o);
-      font-size: 0.65rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
     .tip {
       margin: -12px 0 0;
       color: var(--muted);
@@ -158,33 +140,6 @@
 
     .home-link:hover { border-color: var(--accent); transform: translateY(-1px); }
     .home-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-
-    dialog {
-      width: min(calc(100% - 32px), 420px);
-      padding: 26px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--panel);
-      color: var(--text);
-      box-shadow: 0 24px 80px #0009;
-    }
-
-    dialog::backdrop { background: #080b12cc; }
-    dialog h2 { margin: 0; font-size: 1.3rem; }
-    dialog p { color: var(--muted); line-height: 1.6; }
-
-    .close {
-      padding: 10px 15px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--panel-light);
-      color: var(--text);
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .close:hover { border-color: var(--accent); }
 
     @media (max-width: 480px) {
       .home { gap: 24px; }

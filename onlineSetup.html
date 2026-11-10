@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111522">
+  <title>Online Play | Ultimate Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="onlineSetup.css">
+</head>
+<body>
+  <main class="online-setup">
+    <header>
+      <p class="eyebrow">Play with a friend</p>
+      <h1>Online match</h1>
+      <p class="intro">Create a room and share its link, or join a friend with their room code.</p>
+    </header>
+
+    <section class="online-card" aria-labelledby="room-heading">
+      <h2 id="room-heading">Create a room</h2>
+      <p>The room creator plays X. Your friend joins as O.</p>
+      <button id="create-room" class="start-button" type="button">Create room</button>
+
+      <div class="divider" aria-hidden="true"><span>or join a room</span></div>
+
+      <form id="join-room-form">
+        <label for="room-code-input">Room code</label>
+        <div class="join-row">
+          <input id="room-code-input" name="roomCode" type="text" maxlength="8"
+            autocomplete="off" autocapitalize="characters" spellcheck="false"
+            placeholder="8-character code" required>
+          <button class="start-button" type="submit">Join</button>
+        </div>
+      </form>
+
+      <p id="online-error" class="online-error" role="alert" hidden></p>
+      <p id="online-progress" class="online-progress" role="status" aria-live="polite"></p>
+      <a class="home-link" href="mainMenu.html">Back to main menu</a>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" defer></script>
+  <script src="firebase-config.js" defer></script>
+  <script src="onlineSetup.js" defer></script>
+</body>
+</html>

@@ -34,15 +34,14 @@
         <span class="arrow" aria-hidden="true">›</span>
       </a>
 
-      <button class="mode" id="online-option" type="button" aria-haspopup="dialog">
+      <a class="mode" href="onlineSetup.html">
         <span class="icon online" aria-hidden="true">◎</span>
         <span class="mode-copy">
           <span class="mode-title">Play online</span>
           <span class="mode-description">Challenge another person on a different device.</span>
-          <span class="coming-soon">Online play setup needed</span>
         </span>
         <span class="arrow" aria-hidden="true">›</span>
-      </button>
+      </a>
 
       <a class="mode" href="index.html?mode=local">
         <span class="icon local" aria-hidden="true">×○</span>
@@ -57,12 +56,5 @@
     <p class="tip">New to the game? The rules are explained on the game board.</p>
   </main>
 
-  <dialog id="online-dialog" aria-labelledby="online-title">
-    <h2 id="online-title">Online play needs setup</h2>
-    <p>Playing with someone on another device requires an online room service. It isn’t connected yet, but you can play against the AI or pass the device to a friend for now.</p>
-    <button class="close" id="close-dialog" type="button">Got it</button>
-  </dialog>
-
-  <script src="menu.js" defer></script>
 </body>
 </html>

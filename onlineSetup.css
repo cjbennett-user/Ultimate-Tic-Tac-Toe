@@ -1,0 +1,83 @@
+.online-setup {
+  width: min(100%, 560px);
+  display: grid;
+  justify-items: center;
+  gap: 26px;
+}
+
+.online-setup header { text-align: center; }
+
+.online-setup h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 7vw, 3.4rem);
+  letter-spacing: -0.06em;
+}
+
+.online-card {
+  width: 100%;
+  padding: clamp(18px, 5vw, 28px);
+  display: grid;
+  gap: 14px;
+  border: 1px solid #ffffff12;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #1c2232, var(--panel) 70%);
+  box-shadow: 0 24px 80px #0005, inset 0 1px #ffffff08;
+}
+
+.online-card h2 { margin: 0; font-size: 1.15rem; }
+.online-card > p { margin: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+
+.online-card form { display: grid; gap: 8px; }
+.online-card label { font-size: 0.86rem; font-weight: 750; }
+
+.join-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px;
+}
+
+.join-row input {
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #111522;
+  color: var(--text);
+  font: inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.join-row input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.start-button {
+  padding: 11px 17px;
+  border: 1px solid var(--accent);
+  border-radius: 11px;
+  background: var(--accent);
+  color: #17200c;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.start-button:hover { filter: brightness(1.05); }
+.start-button:disabled { cursor: wait; opacity: 0.65; }
+.divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.75rem; }
+.divider::before, .divider::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+
+.online-error {
+  padding: 10px 12px;
+  border: 1px solid #ff887d66;
+  border-radius: 9px;
+  background: #ff887d12;
+  color: #ffb0a8 !important;
+}
+
+.online-progress { min-height: 1.3em; }
+.online-card > .home-link { justify-self: start; }
+
+@media (max-width: 420px) {
+  .online-setup { gap: 20px; }
+  .online-card { border-radius: 18px; }
+}

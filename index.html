@@ -47,6 +47,15 @@
         <span id="campaign-rating" class="campaign-rating"></span>
         <p id="campaign-description"></p>
       </section>
+      <section id="online-info" class="online-info" hidden aria-live="polite">
+        <p id="online-message"></p>
+        <div class="online-room">
+          <span>Room code</span>
+          <output id="online-room-code"></output>
+          <button id="copy-room-link" class="reset" type="button">Copy invite link</button>
+        </div>
+        <p id="online-error" class="online-error" role="alert" hidden></p>
+      </section>
       <div id="boards" class="boards" aria-label="Game boards"></div>
       <section id="campaign-result" class="campaign-result" hidden aria-live="polite">
         <h2 id="campaign-result-title"></h2>
@@ -67,6 +76,10 @@
     <p class="rules"><strong>How to play:</strong> The square you choose sends your opponent to the matching little board. If that board is already won or full, they can choose any open board. Get three little boards in a row to win!</p>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" defer></script>
+  <script src="firebase-config.js" defer></script>
   <script src="campaignData.js" defer></script>
   <script src="game.js" defer></script>
 </body>
