@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111522">
+  <title>Ultimate Tic-Tac-Toe | Home</title>
+  <link rel="stylesheet" href="menu.css">
+</head>
+<body>
+  <main class="home">
+    <header>
+      <p class="eyebrow">My Favorite Version of Tic-Tac-Toe</p>
+      <h1>Ultimate<br><span>Tic-Tac-Toe</span></h1>
+      <p class="intro">Nine little boards. One big game. Choose how you want to play.</p>
+    </header>
+
+    <nav class="menu" aria-label="Choose a game mode">
+      <a class="mode" href="aiSetup.html">
+        <span class="icon ai" aria-hidden="true">✦</span>
+        <span class="mode-copy">
+          <span class="mode-title">Play against AI</span>
+          <span class="mode-description">Choose your side and how strong the computer plays.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">›</span>
+      </a>
+
+      <a class="mode" href="campaign.html">
+        <span class="icon campaign" aria-hidden="true">★</span>
+        <span class="mode-copy">
+          <span class="mode-title">Campaign</span>
+          <span class="mode-description">Climb through AI challenges and special match rules.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">›</span>
+      </a>
+
+      <button class="mode" id="online-option" type="button" aria-haspopup="dialog">
+        <span class="icon online" aria-hidden="true">◎</span>
+        <span class="mode-copy">
+          <span class="mode-title">Play online</span>
+          <span class="mode-description">Challenge another person on a different device.</span>
+          <span class="coming-soon">Online play setup needed</span>
+        </span>
+        <span class="arrow" aria-hidden="true">›</span>
+      </button>
+
+      <a class="mode" href="index.html?mode=local">
+        <span class="icon local" aria-hidden="true">×○</span>
+        <span class="mode-copy">
+          <span class="mode-title">Play on the same device</span>
+          <span class="mode-description">Take turns locally with a friend.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">›</span>
+      </a>
+    </nav>
+
+    <p class="tip">New to the game? The rules are explained on the game board.</p>
+  </main>
+
+  <dialog id="online-dialog" aria-labelledby="online-title">
+    <h2 id="online-title">Online play needs setup</h2>
+    <p>Playing with someone on another device requires an online room service. It isn’t connected yet, but you can play against the AI or pass the device to a friend for now.</p>
+    <button class="close" id="close-dialog" type="button">Got it</button>
+  </dialog>
+
+  <script src="menu.js" defer></script>
+</body>
+</html>

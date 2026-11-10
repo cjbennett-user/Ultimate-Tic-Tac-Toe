@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111522">
+  <title>AI Match Setup | Ultimate Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="aiSetup.css">
+</head>
+<body>
+  <main class="setup">
+    <header>
+      <p class="eyebrow">Set up your match</p>
+      <h1>Play against AI</h1>
+      <p class="intro">Choose your mark and set the computer's strength before the game begins.</p>
+    </header>
+
+    <form id="match-setup" class="setup-card">
+      <fieldset class="side-picker">
+        <legend>Choose your side</legend>
+        <label class="side-option">
+          <input type="radio" name="player" value="X" checked>
+          <span class="side-mark x-mark">X</span>
+          <span class="side-copy">
+            <span class="side-title">Play as X</span>
+            <span class="side-description">You make the first move.</span>
+          </span>
+        </label>
+        <label class="side-option">
+          <input type="radio" name="player" value="O">
+          <span class="side-mark o-mark">O</span>
+          <span class="side-copy">
+            <span class="side-title">Play as O</span>
+            <span class="side-description">The AI makes the first move.</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <div class="strength-picker">
+        <div class="strength-heading">
+          <label for="strength">AI strength</label>
+          <output id="strength-value" for="strength">1200</output>
+        </div>
+        <input id="strength" type="range" min="400" max="2000" step="100" value="1200"
+          aria-describedby="strength-note">
+        <div class="strength-scale" aria-hidden="true">
+          <span>Beginner</span>
+          <span>Club</span>
+          <span>Expert</span>
+        </div>
+        <p id="strength-note">Elo-style difficulty setting; it is not a measured chess rating.</p>
+      </div>
+
+      <div class="setup-actions">
+        <a class="home-link" href="mainMenu.html">Back to main menu</a>
+        <button class="start-button" type="submit">Start game <span aria-hidden="true">›</span></button>
+      </div>
+    </form>
+  </main>
+  <script src="aiSetup.js" defer></script>
+</body>
+</html>

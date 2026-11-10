@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111522">
+  <title>Ultimate Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <main class="app">
+    <header>
+      <p class="eyebrow">A game of strategy</p>
+      <h1>Ultimate Tic-Tac-Toe</h1>
+      <p class="intro">Win the little boards to win the big one. Every move decides where your opponent plays next.</p>
+    </header>
+
+    <section class="game-panel" aria-label="Ultimate Tic-Tac-Toe game">
+      <div class="game-info">
+        <div class="turn-copy">
+          <span class="turn-label">Game status</span>
+          <span id="status" class="turn-status x" aria-live="polite">X's turn · Pick any board</span>
+        </div>
+        <div class="game-actions">
+          <a class="home-link" href="mainMenu.html">Main menu</a>
+          <button id="reset" class="reset" type="button">New game</button>
+        </div>
+      </div>
+      <div id="difficulty-control" class="difficulty-control">
+        <label class="strength-label" for="strength">AI strength</label>
+        <output id="strength-value" for="strength">1200</output>
+        <span class="elo-label">Elo-style</span>
+        <input id="strength" type="range" min="400" max="2000" step="100" value="1200"
+          aria-describedby="strength-note">
+        <div class="strength-scale" aria-hidden="true">
+          <span>Beginner</span>
+          <span>Club</span>
+          <span>Expert</span>
+        </div>
+        <span id="strength-note" class="strength-note">Approximate setting, not a measured chess rating.</span>
+      </div>
+      <section id="campaign-info" class="campaign-info" hidden aria-live="polite">
+        <div>
+          <span id="campaign-stage" class="campaign-stage"></span>
+          <h2 id="campaign-name"></h2>
+        </div>
+        <span id="campaign-rating" class="campaign-rating"></span>
+        <p id="campaign-description"></p>
+      </section>
+      <div id="boards" class="boards" aria-label="Game boards"></div>
+      <section id="campaign-result" class="campaign-result" hidden aria-live="polite">
+        <h2 id="campaign-result-title"></h2>
+        <p id="campaign-result-copy"></p>
+        <div class="campaign-actions">
+          <a id="campaign-next" class="home-link" hidden></a>
+          <button id="campaign-retry" class="reset" type="button">Try again</button>
+          <a class="home-link" href="campaign.html">Challenge map</a>
+          <a class="home-link" href="mainMenu.html">Main menu</a>
+        </div>
+      </section>
+      <div class="legend" aria-label="Players">
+        <span id="first-player"><b class="legend-mark x">X</b> Player 1</span>
+        <span id="second-player"><b class="legend-mark o">O</b> Player 2</span>
+      </div>
+    </section>
+
+    <p class="rules"><strong>How to play:</strong> The square you choose sends your opponent to the matching little board. If that board is already won or full, they can choose any open board. Get three little boards in a row to win!</p>
+  </main>
+
+  <script src="campaignData.js" defer></script>
+  <script src="game.js" defer></script>
+</body>
+</html>

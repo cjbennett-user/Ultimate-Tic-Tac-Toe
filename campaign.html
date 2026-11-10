@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111522">
+  <title>Campaign | Ultimate Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="campaign.css">
+</head>
+<body>
+  <main class="campaign-home">
+    <header>
+      <p class="eyebrow">The ultimate challenge</p>
+      <h1>Campaign</h1>
+      <p class="intro">Start as a beginner, earn your wins, and climb through a series of increasingly clever opponents.</p>
+    </header>
+
+    <section class="progress-card" aria-label="Campaign progress">
+      <div class="progress-heading">
+        <div>
+          <span class="progress-label">Your progress</span>
+          <p id="progress-copy"></p>
+        </div>
+        <a class="home-link" href="mainMenu.html">Back to main menu</a>
+      </div>
+      <div class="progress-track" role="progressbar" aria-label="Campaign completed" aria-valuemin="0">
+        <span id="progress-fill"></span>
+      </div>
+    </section>
+
+    <nav id="stage-list" class="stage-list" aria-label="Campaign challenges"></nav>
+    <p class="campaign-note">Campaign progress is saved in this browser. AI ratings are approximate difficulty settings, not measured chess ratings.</p>
+  </main>
+
+  <script src="campaignData.js" defer></script>
+  <script src="campaign.js" defer></script>
+</body>
+</html>
