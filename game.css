@@ -79,6 +79,16 @@
 
     .game-actions { display: flex; flex: 0 0 auto; gap: 8px; }
 
+    .rating-notice {
+      margin: -10px 0 14px;
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .rating-notice[hidden] { display: none; }
+
     .difficulty-control {
       margin: -4px 0 20px;
       display: grid;

@@ -24,6 +24,7 @@ const winningLines = [
     const copyRoomLinkButton = document.querySelector("#copy-room-link");
     const onlineCopyStatus = document.querySelector("#online-copy-status");
     const onlineError = document.querySelector("#online-error");
+    const ratingNotice = document.querySelector("#rating-notice");
     const campaignProgressKey = "ultimate-tic-tac-toe-campaign";
     const query = new URLSearchParams(window.location.search);
     const requestedMode = query.get("mode");
@@ -60,10 +61,13 @@ const winningLines = [
     let onlineUid;
     let onlineHostUid;
     let onlineGuestUid;
+    let onlineOpponentRating = 800;
     let onlineReady = false;
     let onlineOpponentReady = false;
     let onlineBusy = false;
     let onlineStatusMessage = "Connecting to online match…";
+    let ratedMatchId = gameMode === "online" ? roomCode : makeMatchId();
+    let ratedMatchHandled = false;
     onlineRoomCode.textContent = roomCode;
     copyRoomLinkButton.hidden = !/^[A-HJ-NP-Z2-9]{8}$/.test(roomCode);
 
@@ -74,6 +78,13 @@ const winningLines = [
         }
       }
       return null;
+    }
+
+    function makeMatchId() {
+      if (window.crypto.randomUUID) return window.crypto.randomUUID();
+      const randomValues = new Uint32Array(4);
+      window.crypto.getRandomValues(randomValues);
+      return Array.from(randomValues, (value) => value.toString(16)).join("");
     }
 
     function isBoardClosed(boardIndex) {
@@ -213,6 +224,9 @@ const winningLines = [
       if (!gameResult && (gameMode === "ai" || gameMode === "campaign") && currentPlayer === aiMark) {
         scheduleAiMove();
       }
+      if (gameResult && gameMode === "ai") {
+        saveRatedResult(Number(strengthSlider.value));
+      }
     }
 
     function playMove(boardIndex, cellIndex) {
@@ -236,6 +250,36 @@ const winningLines = [
     function clearOnlineError() {
       onlineError.hidden = true;
       onlineError.textContent = "";
+    }
+
+    async function saveRatedResult(opponentRating) {
+      if (ratedMatchHandled || !gameResult) return;
+      ratedMatchHandled = true;
+      ratingNotice.hidden = false;
+      ratingNotice.textContent = "Saving your rating…";
+
+      try {
+        const account = gameMode === "online"
+          ? { database: onlineDatabase, user: { uid: onlineUid } }
+          : await window.PlayerAccount.initialize();
+        const outcome = gameResult === "draw"
+          ? "draw"
+          : gameResult === humanMark ? "win" : "loss";
+        const result = await window.PlayerAccount.recordMatch(
+          account.database,
+          account.user.uid,
+          ratedMatchId,
+          outcome,
+          opponentRating
+        );
+        const sign = result.change > 0 ? "+" : "";
+        ratingNotice.textContent = result.change === 0
+          ? `Rating saved: ${result.rating} (no change).`
+          : `Rating saved: ${sign}${result.change} · New rating ${result.rating}.`;
+      } catch (error) {
+        ratedMatchHandled = false;
+        ratingNotice.textContent = error.message || "Could not save your rating. Return to the main menu and try again.";
+      }
     }
 
     function decodeOnlineState(state) {
@@ -402,7 +446,13 @@ const winningLines = [
           onlineHostUid = room.hostUid;
           onlineGuestUid = typeof room.guestUid === "string" ? room.guestUid : null;
           humanMark = room.hostUid === onlineUid ? "X" : "O";
-          onlineOpponentReady = Boolean(onlineGuestUid && onlineGuestUid !== onlineHostUid);
+          onlineOpponentRating = humanMark === "X"
+            ? Number(room.guestRating) || 800
+            : Number(room.hostRating) || 800;
+          onlineOpponentReady = Boolean(
+            onlineGuestUid &&
+            onlineGuestUid !== onlineHostUid
+          );
           onlineRoomCode.textContent = roomCode;
           onlineMessage.textContent = humanMark === "X"
             ? onlineOpponentReady
@@ -421,6 +471,7 @@ const winningLines = [
             onlineReady = true;
             onlineStatusMessage = "";
             clearOnlineError();
+            if (gameResult && onlineOpponentReady) saveRatedResult(onlineOpponentRating);
           } catch (error) {
             onlineReady = false;
             onlineStatusMessage = "Room data is invalid";
@@ -656,6 +707,11 @@ const winningLines = [
       }
       cells = Array.from({ length: 9 }, () => Array(9).fill(null));
       boardResults = Array(9).fill(null);
+      if (gameMode === "ai") {
+        ratedMatchId = makeMatchId();
+        ratedMatchHandled = false;
+        ratingNotice.hidden = true;
+      }
       currentPlayer = gameMode === "ai" && humanMark === "O" ? aiMark : "X";
       nextBoard = null;
       gameResult = null;

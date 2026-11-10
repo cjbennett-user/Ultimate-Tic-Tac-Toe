@@ -7,39 +7,6 @@ const roomCodeCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 let requestInProgress = false;
 
-function initializeFirebase() {
-  if (!window.firebase || !window.FIREBASE_CONFIG) {
-    throw new Error("Firebase could not load. Check your internet connection and Firebase setup.");
-  }
-
-  const app = window.firebase.apps.length
-    ? window.firebase.app()
-    : window.firebase.initializeApp(window.FIREBASE_CONFIG);
-
-  const auth = window.firebase.auth(app);
-  return getOrCreateAnonymousUser(auth).then((user) => ({
-    database: window.firebase.database(app),
-    uid: user.uid
-  }));
-}
-
-function getOrCreateAnonymousUser(auth) {
-  return new Promise((resolve, reject) => {
-    let unsubscribe = () => {};
-    unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe();
-      if (user) {
-        resolve(user);
-      } else {
-        auth.signInAnonymously().then(({ user: newUser }) => resolve(newUser), reject);
-      }
-    }, (error) => {
-      unsubscribe();
-      reject(error);
-    });
-  });
-}
-
 function makeRoomCode() {
   const randomValues = new Uint32Array(8);
   window.crypto.getRandomValues(randomValues);
@@ -66,7 +33,8 @@ function newGameState() {
     boardResults: Array(9).fill(""),
     currentPlayer: "X",
     nextBoard: -1,
-    result: ""
+    result: "",
+    updatedAt: Date.now()
   };
 }
 
@@ -75,20 +43,41 @@ function openRoom(roomCode) {
 }
 
 async function createRoom() {
-  const { database, uid } = await initializeFirebase();
-  const roomCode = makeRoomCode();
-  await database.ref(`rooms/${roomCode}`).set({
-    hostUid: uid,
-    guestUid: null,
-    state: newGameState()
-  });
+  const { database, user, profile } = await window.PlayerAccount.initialize();
+  const uid = user.uid;
+  await window.PlayerAccount.cleanupRooms(database, uid);
+  let roomCode;
+  let roomCreated = false;
+
+  for (let attempt = 0; attempt < 3 && !roomCreated; attempt += 1) {
+    roomCode = makeRoomCode();
+    try {
+      await database.ref(`rooms/${roomCode}`).set({
+        hostUid: uid,
+        hostRating: Number(profile.rating) || window.PlayerAccount.startingRating,
+        guestUid: null,
+        createdAt: Date.now(),
+        state: newGameState()
+      });
+      roomCreated = true;
+    } catch (error) {
+      if (error.code !== "PERMISSION_DENIED") throw error;
+    }
+  }
+
+  if (!roomCreated) throw new Error("Could not reserve a unique room code. Please try again.");
+  await database.ref(`playerRooms/${uid}/${roomCode}`).set(true);
   openRoom(roomCode);
 }
 
 async function joinRoom(roomCode) {
-  const { database, uid } = await initializeFirebase();
+  const { database, user, profile } = await window.PlayerAccount.initialize();
+  const uid = user.uid;
+  await window.PlayerAccount.cleanupRooms(database, uid);
   const roomRef = database.ref(`rooms/${roomCode}`);
   await roomRef.child("guestUid").set(uid);
+  await roomRef.child("guestRating").set(Number(profile.rating) || window.PlayerAccount.startingRating);
+  await database.ref(`playerRooms/${uid}/${roomCode}`).set(true);
   openRoom(roomCode);
 }
 
@@ -127,7 +116,7 @@ joinRoomForm.addEventListener("submit", async (event) => {
   } catch (error) {
     setBusy(false);
     showError(error.code === "PERMISSION_DENIED"
-      ? new Error("That room code is invalid or already has two players.")
+      ? new Error("That room code is invalid, full, already finished, or belongs to you.")
       : error);
   }
 });

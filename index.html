@@ -15,7 +15,7 @@
 <body>
   <main class="app">
     <header>
-      <p class="eyebrow">A game of strategy</p>
+      <p class="eyebrow">The Best Kind of Tic-Tac-Toe</p>
       <h1>Ultimate Tic-Tac-Toe</h1>
       <p class="intro">Win the little boards to win the big one. Every move decides where your opponent plays next.</p>
     </header>
@@ -31,6 +31,7 @@
           <button id="reset" class="reset" type="button">New game</button>
         </div>
       </div>
+      <p id="rating-notice" class="rating-notice" role="status" aria-live="polite" hidden></p>
       <div id="difficulty-control" class="difficulty-control">
         <label class="strength-label" for="strength">AI strength</label>
         <output id="strength-value" for="strength">1200</output>
@@ -87,6 +88,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" defer></script>
   <script src="firebase-config.js" defer></script>
+  <script src="player-account.js" defer></script>
   <script src="campaignData.js" defer></script>
   <script src="game.js" defer></script>
 </body>

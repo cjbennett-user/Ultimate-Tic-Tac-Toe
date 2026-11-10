@@ -15,6 +15,40 @@
       <p class="intro">Nine little boards. One big game. Choose how you want to play.</p>
     </header>
 
+    <section class="player-card" aria-labelledby="player-heading">
+      <div class="player-summary">
+        <div>
+          <p class="player-kicker">Your player profile</p>
+          <h2 id="player-heading">Loading rating…</h2>
+        </div>
+        <output id="player-rating" aria-label="Current rating">—</output>
+      </div>
+      <p id="player-account-status" class="player-account-status" role="status" aria-live="polite">
+        Connecting to your player profile…
+      </p>
+      <p id="player-record" class="player-record"></p>
+      <details class="account-settings">
+        <summary>Save progress to an account</summary>
+        <p class="account-note">New players start at 800. Wins against the AI or another rated player can raise your Elo; losses can lower it. Anonymous progress is saved on this browser. Link email or Google to use the same rating on another device. Sign-in providers must be enabled in Firebase Authentication.</p>
+        <form id="account-form">
+          <label for="account-email">Email</label>
+          <input id="account-email" name="email" type="email" autocomplete="email" required>
+          <label for="account-password">Password</label>
+          <input id="account-password" name="password" type="password" minlength="6"
+            autocomplete="current-password" required>
+          <div class="account-actions">
+            <button id="link-email" type="button" disabled>Link email account</button>
+            <button id="sign-in-email" type="button" disabled>Sign in with email</button>
+          </div>
+        </form>
+        <div class="account-actions">
+          <button id="link-google" type="button" disabled>Link Google account</button>
+          <button id="sign-in-google" type="button" disabled>Sign in with Google</button>
+        </div>
+        <p id="account-error" class="account-error" role="alert" hidden></p>
+      </details>
+    </section>
+
     <nav class="menu" aria-label="Choose a game mode">
       <a class="mode" href="aiSetup.html">
         <span class="icon ai" aria-hidden="true">✦</span>
@@ -56,5 +90,11 @@
     <p class="tip">New to the game? The rules are explained on the game board.</p>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" defer></script>
+  <script src="firebase-config.js" defer></script>
+  <script src="player-account.js" defer></script>
+  <script src="profile.js" defer></script>
 </body>
 </html>

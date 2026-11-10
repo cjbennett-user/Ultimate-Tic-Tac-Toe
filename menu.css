@@ -67,6 +67,54 @@
       gap: 12px;
     }
 
+    .player-card {
+      width: 100%;
+      padding: 18px 20px;
+      display: grid;
+      gap: 10px;
+      border: 1px solid #c6f36b40;
+      border-radius: 17px;
+      background: linear-gradient(120deg, #1c2232, var(--panel));
+    }
+
+    .player-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .player-kicker { margin: 0 0 4px; color: var(--muted); font-size: 0.72rem; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
+    .player-summary h2 { margin: 0; font-size: 1rem; }
+    .player-summary output { color: var(--accent); font-size: 1.8rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .player-account-status, .player-record, .account-note { margin: 0; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+    .account-settings { border-top: 1px solid var(--line); padding-top: 10px; }
+    .account-settings summary { cursor: pointer; font-size: 0.84rem; font-weight: 750; }
+    .account-settings[open] summary { margin-bottom: 10px; }
+    .account-settings form { margin-top: 12px; display: grid; gap: 7px; }
+    .account-settings label { font-size: 0.78rem; font-weight: 700; }
+    .account-settings input {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #111522;
+      color: var(--text);
+      font: inherit;
+    }
+    .account-settings input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .account-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+    .account-actions button {
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel-light);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .account-actions button:hover { border-color: var(--accent); }
+    .account-actions button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .account-actions button:disabled { cursor: wait; opacity: 0.65; }
+    .account-error { margin: 0; color: #ffb0a8; font-size: 0.82rem; line-height: 1.45; }
+    .account-error[hidden] { display: none; }
+
     .mode {
       width: 100%;
       min-height: 94px;
