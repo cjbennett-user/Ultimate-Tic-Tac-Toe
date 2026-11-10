@@ -20,7 +20,9 @@ const winningLines = [
     const onlineInfo = document.querySelector("#online-info");
     const onlineMessage = document.querySelector("#online-message");
     const onlineRoomCode = document.querySelector("#online-room-code");
+    const copyRoomCodeButton = document.querySelector("#copy-room-code");
     const copyRoomLinkButton = document.querySelector("#copy-room-link");
+    const onlineCopyStatus = document.querySelector("#online-copy-status");
     const onlineError = document.querySelector("#online-error");
     const campaignProgressKey = "ultimate-tic-tac-toe-campaign";
     const query = new URLSearchParams(window.location.search);
@@ -338,6 +340,23 @@ const winningLines = [
       secondPlayerElement.lastChild.textContent = humanMark === "O" ? " You (guest)" : " Opponent (guest)";
     }
 
+    function getOrCreateAnonymousUser(auth) {
+      return new Promise((resolve, reject) => {
+        let unsubscribe = () => {};
+        unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe();
+          if (user) {
+            resolve(user);
+          } else {
+            auth.signInAnonymously().then(({ user: newUser }) => resolve(newUser), reject);
+          }
+        }, (error) => {
+          unsubscribe();
+          reject(error);
+        });
+      });
+    }
+
     async function connectOnlineGame() {
       if (!/^[A-HJ-NP-Z2-9]{8}$/.test(roomCode)) {
         onlineStatusMessage = "Room code is invalid";
@@ -354,8 +373,8 @@ const winningLines = [
           ? window.firebase.app()
           : window.firebase.initializeApp(window.FIREBASE_CONFIG);
         const auth = window.firebase.auth(app);
-        const credential = await auth.signInAnonymously();
-        onlineUid = credential.user.uid;
+        const user = await getOrCreateAnonymousUser(auth);
+        onlineUid = user.uid;
         onlineDatabase = window.firebase.database(app);
         onlineRoomRef = onlineDatabase.ref(`rooms/${roomCode}`);
         onlineStateRef = onlineRoomRef.child("state");
@@ -693,15 +712,49 @@ const winningLines = [
 
     resetButton.addEventListener("click", newGame);
     campaignRetry.addEventListener("click", newGame);
-    copyRoomLinkButton.addEventListener("click", async () => {
+    function legacyCopyText(text) {
+      const temporaryInput = document.createElement("textarea");
+      temporaryInput.value = text;
+      temporaryInput.setAttribute("readonly", "");
+      temporaryInput.style.position = "fixed";
+      temporaryInput.style.opacity = "0";
+      document.body.append(temporaryInput);
+      temporaryInput.select();
+      const copied = document.execCommand("copy");
+      temporaryInput.remove();
+      return copied;
+    }
+
+    async function copyText(text, button, successMessage) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else if (!legacyCopyText(text)) {
+          throw new Error("Clipboard access is unavailable.");
+        }
+        onlineCopyStatus.textContent = successMessage;
+      } catch (error) {
+        if (legacyCopyText(text)) {
+          onlineCopyStatus.textContent = successMessage;
+        } else {
+          onlineCopyStatus.textContent = "Copy was blocked. Select the room code and copy it manually.";
+        }
+      }
+
+      const originalLabel = button.id === "copy-room-code" ? "Copy code" : "Copy invite link";
+      button.textContent = onlineCopyStatus.textContent === successMessage ? "Copied" : originalLabel;
+      window.setTimeout(() => {
+        button.textContent = originalLabel;
+      }, 2000);
+    }
+
+    copyRoomCodeButton.addEventListener("click", () => {
+      copyText(roomCode, copyRoomCodeButton, "Room code copied.");
+    });
+    copyRoomLinkButton.addEventListener("click", () => {
       const inviteLink = new URL("onlineSetup.html", window.location.href);
       inviteLink.searchParams.set("join", roomCode);
-      try {
-        await navigator.clipboard.writeText(inviteLink.toString());
-        copyRoomLinkButton.textContent = "Invite link copied";
-      } catch (error) {
-        showOnlineError("Could not copy the invite link. Copy the room code and send it to your friend instead.");
-      }
+      copyText(inviteLink.toString(), copyRoomLinkButton, "Invite link copied.");
     });
     strengthSlider.addEventListener("input", () => {
       strengthValue.value = `${strengthSlider.value} approximate Elo`;

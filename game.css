@@ -161,6 +161,8 @@
     .online-room > span { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
     .online-room output { color: var(--o); font-size: 1.05rem; font-weight: 900; letter-spacing: 0.16em; }
     .online-room .reset { margin-left: auto; }
+    .online-room .reset + .reset { margin-left: 0; }
+    .online-copy-status { min-height: 1.2em; }
     .online-error {
       padding: 9px 11px;
       border: 1px solid #ff887d66;

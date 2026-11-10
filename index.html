@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111522">
+  <script>
+    if (!window.location.search) {
+      window.location.replace("mainMenu.html");
+    }
+  </script>
   <title>Ultimate Tic-Tac-Toe</title>
   <link rel="stylesheet" href="game.css">
 </head>
@@ -52,8 +57,10 @@
         <div class="online-room">
           <span>Room code</span>
           <output id="online-room-code"></output>
+          <button id="copy-room-code" class="reset" type="button">Copy code</button>
           <button id="copy-room-link" class="reset" type="button">Copy invite link</button>
         </div>
+        <p id="online-copy-status" class="online-copy-status" role="status" aria-live="polite"></p>
         <p id="online-error" class="online-error" role="alert" hidden></p>
       </section>
       <div id="boards" class="boards" aria-label="Game boards"></div>

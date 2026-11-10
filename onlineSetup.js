@@ -16,10 +16,28 @@ function initializeFirebase() {
     ? window.firebase.app()
     : window.firebase.initializeApp(window.FIREBASE_CONFIG);
 
-  return window.firebase.auth(app).signInAnonymously().then(({ user }) => ({
+  const auth = window.firebase.auth(app);
+  return getOrCreateAnonymousUser(auth).then((user) => ({
     database: window.firebase.database(app),
     uid: user.uid
   }));
+}
+
+function getOrCreateAnonymousUser(auth) {
+  return new Promise((resolve, reject) => {
+    let unsubscribe = () => {};
+    unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      if (user) {
+        resolve(user);
+      } else {
+        auth.signInAnonymously().then(({ user: newUser }) => resolve(newUser), reject);
+      }
+    }, (error) => {
+      unsubscribe();
+      reject(error);
+    });
+  });
 }
 
 function makeRoomCode() {
