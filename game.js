@@ -377,7 +377,8 @@ const winningLines = [
           : `Rating saved: ${sign}${result.change} · New rating ${result.rating}.`;
       } catch (error) {
         ratedMatchHandled = false;
-        ratingNotice.textContent = error.message || "Could not save your rating. Return to the main menu and try again.";
+        console.error("Could not save the match rating.", error);
+        ratingNotice.textContent = "Could not save your rating. Please try again later.";
       }
     }
 
@@ -477,9 +478,8 @@ const winningLines = [
           showOnlineError("That move was not accepted. The board may have changed; check whose turn it is.");
         }
       } catch (error) {
-        showOnlineError(error.code === "PERMISSION_DENIED"
-          ? "Firebase denied the move. Check that the Realtime Database rules are installed."
-          : error.message || "The move could not be sent. Check your connection and try again.");
+        console.error("Could not send the online move.", error);
+        showOnlineError("The move could not be sent. Check your connection and try again.");
       } finally {
         onlineBusy = false;
         render();
@@ -519,7 +519,7 @@ const winningLines = [
 
       try {
         if (!window.firebase || !window.FIREBASE_CONFIG) {
-          throw new Error("Firebase could not load. Check your internet connection and reload.");
+          throw new Error("The online game could not start.");
         }
         const app = window.firebase.apps.length
           ? window.firebase.app()
@@ -614,26 +614,23 @@ const winningLines = [
           } catch (error) {
             onlineReady = false;
             onlineStatusMessage = "Room data is invalid";
-            showOnlineError(error.message);
+            console.error("The online room contains invalid game data.", error);
+            showOnlineError("The online game data is invalid. Return to the online menu and create a new room.");
           }
           render();
         }, (error) => {
           onlineReady = false;
           onlineOpponentReady = false;
           onlineStatusMessage = "Online connection failed";
-          showOnlineError(error.code === "PERMISSION_DENIED"
-            ? "Firebase denied access. Check Authentication and your Realtime Database rules."
-            : error.message || "The room could not be read. Check your internet connection.");
+          console.error("Could not read the online room.", error);
+          showOnlineError("The room could not be opened. Check your connection and try again.");
           render();
         });
       } catch (error) {
         onlineReady = false;
         onlineStatusMessage = "Online sign-in failed";
-        showOnlineError(error.code === "auth/unauthorized-domain"
-          ? "Add this site’s domain in Firebase Authentication → Settings → Authorized domains."
-          : error.code === "auth/operation-not-allowed"
-            ? "Enable Anonymous sign-in in Firebase Authentication → Sign-in method."
-            : error.message || "Could not connect to Firebase.");
+        console.error("Could not connect to the online game.", error);
+        showOnlineError("Could not connect to the online game. Please try again later.");
         render();
       }
     }
@@ -873,7 +870,7 @@ const winningLines = [
             ? ` AI · ${campaignStage.rating}`
             : aiMark === "O" ? ` AI · ${strengthSlider.value}` : " You";
       }
-      strengthValue.value = `${strengthSlider.value} approximate Elo`;
+      strengthValue.value = `AI strength ${strengthSlider.value}`;
       strengthValue.textContent = strengthSlider.value;
       if (campaignStage) {
         document.querySelector("#campaign-stage").textContent =
@@ -881,7 +878,7 @@ const winningLines = [
             ? "Player-made challenge"
             : `Challenge ${campaignStageNumber} of ${window.CAMPAIGN_STAGES.length}`;
         document.querySelector("#campaign-name").textContent = campaignStage.name;
-        document.querySelector("#campaign-rating").textContent = `${campaignStage.rating} Elo-style`;
+        document.querySelector("#campaign-rating").textContent = `AI strength ${campaignStage.rating}`;
         document.querySelector("#campaign-description").textContent = campaignStage.description;
         const routing = campaignStage.rules?.routing;
         const routingInstructions = routing === "mirror"
@@ -963,6 +960,18 @@ const winningLines = [
       menuLink.textContent = "Back to challenges";
     }
 
+    function normalizeCommunitySetup(setup) {
+      if (Array.isArray(setup)) return setup;
+      if (setup === undefined || setup === null) return [];
+      if (typeof setup !== "object") return null;
+
+      const indexes = Object.keys(setup)
+        .filter((key) => /^\d+$/.test(key))
+        .sort((a, b) => Number(a) - Number(b));
+      if (Number.isInteger(setup.count) && setup.count !== indexes.length) return null;
+      return indexes.map((index) => setup[index]);
+    }
+
     async function loadCommunityCampaign() {
       const challengeId = query.get("id");
       if (!challengeId || !window.firebase || !window.FIREBASE_CONFIG) {
@@ -977,14 +986,15 @@ const winningLines = [
         const snapshot = await window.firebase.database(app)
           .ref(`communityCampaigns/${challengeId}`).once("value");
         const stage = snapshot.val();
+        const setup = normalizeCommunitySetup(stage?.setup);
         const valid = stage && stage.id === challengeId &&
           typeof stage.name === "string" && stage.name.length > 0 && stage.name.length <= 40 &&
           typeof stage.description === "string" && stage.description.length <= 120 &&
           Number.isFinite(Number(stage.rating)) && Number(stage.rating) >= 400 && Number(stage.rating) <= 1500 &&
           (stage.rules === undefined || stage.rules === null ||
             typeof stage.rules === "object" && !Array.isArray(stage.rules)) &&
-          Array.isArray(stage.setup) && stage.setup.length <= 24 &&
-          stage.setup.every((mark) => mark && Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
+          Array.isArray(setup) && setup.length <= 24 &&
+          setup.every((mark) => mark && Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
             Number.isInteger(mark.cell) && mark.cell >= 0 && mark.cell < 9 &&
             ["X", "O"].includes(mark.mark)) &&
           ["X", "O"].includes(stage.firstPlayer || "X") &&
@@ -994,7 +1004,7 @@ const winningLines = [
             stage.rules.blockedCells.length <= 40 &&
             stage.rules.blockedCells.every((cell) => cell && Number.isInteger(cell.board) && cell.board >= 0 &&
               cell.board < 9 && Number.isInteger(cell.cell) && cell.cell >= 0 && cell.cell < 9 &&
-              !stage.setup.some((mark) => mark.board === cell.board && mark.cell === cell.cell)));
+              !setup.some((mark) => mark.board === cell.board && mark.cell === cell.cell)));
         if (!valid) {
           showUnavailablePlayerCampaign("This community challenge is missing, or its saved data is invalid.");
           return;
@@ -1002,6 +1012,7 @@ const winningLines = [
 
         campaignStage = {
           ...stage,
+          setup,
           firstPlayer: stage.firstPlayer || "X",
           rules: {
             ...stage.rules,
@@ -1013,7 +1024,7 @@ const winningLines = [
       } catch (error) {
         console.error("Could not load the community challenge.", error);
         showUnavailablePlayerCampaign(
-          "Community challenges are unavailable. Check your connection and Firebase Realtime Database read rules."
+          "This community challenge is unavailable right now. Please try again later."
         );
       }
     }
@@ -1065,7 +1076,7 @@ const winningLines = [
       copyText(inviteLink.toString(), copyRoomLinkButton, "Invite link copied.");
     });
     strengthSlider.addEventListener("input", () => {
-      strengthValue.value = `${strengthSlider.value} approximate Elo`;
+      strengthValue.value = `AI strength ${strengthSlider.value}`;
       strengthValue.textContent = strengthSlider.value;
     });
     strengthSlider.addEventListener("change", newGame);

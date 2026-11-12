@@ -3,7 +3,7 @@ const strengthSlider = document.querySelector("#strength");
 const strengthOutput = document.querySelector("#strength-value");
 
 strengthSlider.addEventListener("input", () => {
-  strengthOutput.value = `${strengthSlider.value} approximate Elo`;
+  strengthOutput.value = `AI strength ${strengthSlider.value}`;
   strengthOutput.textContent = strengthSlider.value;
 });
 

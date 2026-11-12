@@ -90,7 +90,8 @@ function setBusy(isBusy, message = "") {
 
 function showError(error) {
   onlineError.hidden = false;
-  onlineError.textContent = error.message || "Could not connect to Firebase. Please try again.";
+  console.error("Online setup failed.", error);
+  onlineError.textContent = "Could not create or join the match. Check your connection and try again.";
 }
 
 function newGameState(setup) {

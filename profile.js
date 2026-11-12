@@ -19,13 +19,14 @@ function showAccountError(error) {
     "auth/credential-already-in-use": "That account is already linked to another player profile. Sign in to that account to use its rating.",
     "auth/weak-password": "Choose a password with at least 6 characters.",
     "auth/invalid-email": "Enter a valid email address.",
-    "auth/operation-not-allowed": "Enable this sign-in provider in Firebase Authentication settings.",
+    "auth/operation-not-allowed": "This sign-in option is unavailable right now. Please try again later.",
     "auth/popup-blocked": "Your browser blocked the Google sign-in popup. Allow popups for this site and try again.",
     "auth/popup-closed-by-user": "The sign-in window was closed before the process finished.",
     "auth/wrong-password": "The email or password is incorrect.",
     "auth/invalid-credential": "The email or password is incorrect."
   };
-  accountError.textContent = messages[error.code] || error.message || "The account action failed. Please try again.";
+  console.error("Player account action failed.", error);
+  accountError.textContent = messages[error.code] || "The account action failed. Please try again.";
   accountError.hidden = false;
 }
 
@@ -138,6 +139,6 @@ window.PlayerAccount.initialize().then(({ auth, database, user, profile }) => {
   playerRating.value = "—";
   playerRating.textContent = "—";
   playerRecord.textContent = "";
-  playerAccountStatus.textContent = "Could not load your rating. Check your internet connection and Firebase settings.";
+  playerAccountStatus.textContent = "Could not load your rating. Check your connection and try again.";
   showAccountError(error);
 });

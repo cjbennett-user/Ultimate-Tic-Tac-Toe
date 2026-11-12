@@ -91,8 +91,29 @@ function containsBannedWords(value) {
   return BANNED_WORDS.some((word) => normalized.includes(word));
 }
 
+function normalizeStageSetup(setup) {
+  if (Array.isArray(setup)) return setup;
+  if (setup === undefined || setup === null) return [];
+  if (typeof setup !== "object") return null;
+
+  const indexes = Object.keys(setup)
+    .filter((key) => /^\d+$/.test(key))
+    .sort((a, b) => Number(a) - Number(b));
+  if (Number.isInteger(setup.count) && setup.count !== indexes.length) return null;
+  return indexes.map((index) => setup[index]);
+}
+
+function encodeStageSetup(setup) {
+  const encoded = { count: setup.length };
+  setup.forEach((mark, index) => {
+    encoded[String(index)] = mark;
+  });
+  return encoded;
+}
+
 function isValidStage(stage) {
   const rules = stage?.rules && typeof stage.rules === "object" ? stage.rules : {};
+  const setup = normalizeStageSetup(stage?.setup);
   const validRouting = [
     "normal", "mirror", "free", "center", "random",
     "same_row", "same_column", "clockwise"
@@ -106,8 +127,8 @@ function isValidStage(stage) {
     stage.firstPlayer !== undefined && !["X", "O"].includes(stage.firstPlayer) ||
     stage.rules !== undefined && stage.rules !== null &&
       (typeof stage.rules !== "object" || Array.isArray(stage.rules)) ||
-    !Array.isArray(stage.setup) || stage.setup.length > 24 ||
-    !stage.setup.every((mark) => mark && Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
+    !Array.isArray(setup) || setup.length > 24 ||
+    !setup.every((mark) => mark && Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
       Number.isInteger(mark.cell) && mark.cell >= 0 && mark.cell < 9 &&
       ["X", "O"].includes(mark.mark)) ||
     !validRouting.includes(rules.routing || "normal")) {
@@ -117,7 +138,7 @@ function isValidStage(stage) {
   return Array.isArray(blockedCells) && blockedCells.length <= 40 &&
     blockedCells.every((cell) => cell && Number.isInteger(cell.board) && cell.board >= 0 && cell.board < 9 &&
       Number.isInteger(cell.cell) && cell.cell >= 0 && cell.cell < 9 &&
-      !stage.setup.some((mark) => mark.board === cell.board && mark.cell === cell.cell));
+      !setup.some((mark) => mark.board === cell.board && mark.cell === cell.cell));
 }
 
 function getFirebaseApp() {
@@ -164,7 +185,7 @@ function createStageCard(stage, number, isComplete, mode = "campaign") {
     : mode === "playerCampaign"
       ? `index.html?mode=playerCampaign&id=${encodeURIComponent(stage.id)}`
       : `index.html?mode=campaign&stage=${number}`;
-  card.setAttribute("aria-label", `Start challenge: ${stage.name}, AI rating ${stage.rating}`);
+  card.setAttribute("aria-label", `Start challenge: ${stage.name}, AI strength ${stage.rating}`);
 
   const stageNumber = document.createElement("span");
   stageNumber.className = "stage-number";
@@ -184,7 +205,7 @@ function createStageCard(stage, number, isComplete, mode = "campaign") {
   details.className = "stage-copy";
   const rating = document.createElement("span");
   rating.className = "stage-rating";
-  rating.textContent = `${stage.rating} Elo`;
+  rating.textContent = `AI strength ${stage.rating}`;
   const state = document.createElement("span");
   state.className = "stage-status";
   state.textContent = isComplete ? "Verified · Play again" : "Play ›";
@@ -259,7 +280,10 @@ function watchCommunityStages() {
     getCommunityDatabase().ref(COMMUNITY_STAGES_PATH).on("value", (snapshot) => {
       const saved = snapshot.val() || {};
       communityStages = Object.values(saved).filter((stage) => {
-        if (isValidStage(stage)) return true;
+        if (isValidStage(stage)) {
+          stage.setup = normalizeStageSetup(stage.setup);
+          return true;
+        }
         console.warn("A community challenge was hidden because its content or format is invalid.");
         return false;
       }).sort((a, b) => a.name.localeCompare(b.name));
@@ -270,12 +294,12 @@ function watchCommunityStages() {
     }, (error) => {
       console.error("Could not load community challenges.", error);
       communityStatus.textContent =
-        "Community challenges are unavailable. Check Firebase Realtime Database read rules.";
+        "Community challenges are unavailable right now. Please try again later.";
       communityStageEmpty.hidden = true;
     });
   } catch (error) {
     console.error("Could not connect to community challenges.", error);
-    communityStatus.textContent = error.message || "Could not connect to Firebase.";
+    communityStatus.textContent = "Community challenges are unavailable right now. Please try again later.";
     communityStageEmpty.textContent = "Community challenges could not be loaded.";
   }
 }
@@ -340,6 +364,7 @@ async function publishPlayerStage(stageId, button) {
     const user = await getAnonymousUser(window.firebase.auth(app));
     const published = {
       ...stage,
+      setup: encodeStageSetup(stage.setup),
       authorUid: user.uid,
       verifiedBy: user.uid,
       verifiedAt: Date.now(),
@@ -352,9 +377,7 @@ async function publishPlayerStage(stageId, button) {
     console.error("Could not publish the community challenge.", error);
     button.disabled = false;
     button.textContent = "Publish";
-    communityStatus.textContent = error.code === "PERMISSION_DENIED"
-      ? "Firebase blocked publishing. Add authenticated read/write rules for communityCampaigns in Realtime Database."
-      : `Could not publish: ${error.message || "check your Firebase connection."}`;
+    communityStatus.textContent = "We couldn't publish this challenge. Please check your connection and try again.";
   }
 }
 
