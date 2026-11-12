@@ -19,6 +19,33 @@
     <section class="online-card" aria-labelledby="room-heading">
       <h2 id="room-heading">Create a room</h2>
       <p>The room creator plays X. Your friend joins as O.</p>
+      <details class="online-custom-settings">
+        <summary>Custom match rules (optional)</summary>
+        <label class="custom-rule-picker" for="online-routing">
+          Board routing
+          <select id="online-routing">
+            <option value="normal">Classic: your square sends the next player</option>
+            <option value="mirror">Mirrored: send them to the opposite square</option>
+            <option value="free">Free choice: either player may pick any open board</option>
+            <option value="random">Random: the game picks an open board for the next player</option>
+            <option value="same_row">Same row: next player may choose any open board in that row</option>
+            <option value="same_column">Same column: next player may choose any open board in that column</option>
+            <option value="clockwise">Clockwise: send them to the next open board around the outer ring</option>
+          </select>
+        </label>
+        <label class="custom-rule-option">
+          <input id="enable-handicap" type="checkbox">
+          <span>
+            <strong>Starting-board handicap</strong>
+            <small>Choose the starting X and O marks. The position is shared with both players.</small>
+          </span>
+        </label>
+        <fieldset id="handicap-editor" class="board-editor" hidden>
+          <legend>Starting position — click squares to cycle empty → X → O</legend>
+          <div id="handicap-board" class="challenge-board" aria-label="Starting position editor"></div>
+          <button id="clear-handicap-board" class="clear-handicap" type="button">Clear starting position</button>
+        </fieldset>
+      </details>
       <button id="create-room" class="start-button" type="button">Create room</button>
 
       <div class="divider" aria-hidden="true"><span>or join a room</span></div>

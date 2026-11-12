@@ -77,6 +77,107 @@
 .online-progress { min-height: 1.3em; }
 .online-card > .home-link { justify-self: start; }
 
+.online-custom-settings {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.online-custom-settings summary {
+  color: var(--accent);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.custom-rule-picker {
+  display: grid;
+  gap: 7px;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.custom-rule-picker select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #111522;
+  color: var(--text);
+  font: inherit;
+}
+
+.custom-rule-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.custom-rule-option input { margin-top: 4px; accent-color: var(--accent); }
+.custom-rule-option span { display: grid; gap: 3px; }
+.custom-rule-option small { color: var(--muted); font-size: 0.78rem; font-weight: 400; line-height: 1.4; }
+
+.board-editor {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.board-editor legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.challenge-board {
+  width: min(100%, 360px);
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin: 10px auto;
+}
+
+.challenge-mini-board {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #111522;
+}
+
+.challenge-cell {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--panel-light);
+  color: var(--text);
+  font-size: clamp(0.65rem, 3.8vw, 1.2rem);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.challenge-cell.mark-x { color: var(--x); }
+.challenge-cell.mark-o { color: var(--o); }
+
+.clear-handicap {
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
 @media (max-width: 420px) {
   .online-setup { gap: 20px; }
   .online-card { border-radius: 18px; }

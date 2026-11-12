@@ -291,6 +291,7 @@
     .cell:disabled { cursor: default; }
     .cell.mark-x { color: var(--x); }
     .cell.mark-o { color: var(--o); }
+    .cell.rule-blocked { background: #10131d; box-shadow: inset 0 0 0 1px #343b4d; }
 
     .board-result {
       position: absolute;

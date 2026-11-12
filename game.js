@@ -12,6 +12,7 @@ const winningLines = [
     const strengthSlider = document.querySelector("#strength");
     const strengthValue = document.querySelector("#strength-value");
     const campaignInfo = document.querySelector("#campaign-info");
+    const rulesCopy = document.querySelector("#rules-copy");
     const campaignResult = document.querySelector("#campaign-result");
     const campaignResultTitle = document.querySelector("#campaign-result-title");
     const campaignResultCopy = document.querySelector("#campaign-result-copy");
@@ -28,7 +29,10 @@ const winningLines = [
     const campaignProgressKey = "ultimate-tic-tac-toe-campaign";
     const query = new URLSearchParams(window.location.search);
     const requestedMode = query.get("mode");
-    const gameMode = ["ai", "campaign", "online"].includes(requestedMode) ? requestedMode : "local";
+    const gameMode = ["ai", "campaign", "playerCampaign", "playerCampaignTest", "online"].includes(requestedMode)
+      ? requestedMode
+      : "local";
+    const isCampaignMode = ["campaign", "playerCampaign", "playerCampaignTest"].includes(gameMode);
     const roomCode = (query.get("room") || "").toUpperCase();
     let humanMark = gameMode === "ai" && query.get("player") === "O" ? "O" : "X";
     const aiMark = humanMark === "X" ? "O" : "X";
@@ -37,14 +41,28 @@ const winningLines = [
     const campaignStageNumber = requestedStage >= 1 && requestedStage <= window.CAMPAIGN_STAGES.length
       ? requestedStage
       : 1;
-    const campaignStage = gameMode === "campaign"
+    let playerCampaignStage = null;
+    if (gameMode === "playerCampaignTest") {
+      try {
+        const stages = JSON.parse(localStorage.getItem("ultimate-tic-tac-toe-player-campaigns") || "[]");
+        playerCampaignStage = Array.isArray(stages)
+          ? stages.find((stage) => stage && stage.id === query.get("id")) || null
+          : null;
+      } catch {
+        playerCampaignStage = null;
+      }
+    }
+    let campaignStage = gameMode === "playerCampaignTest"
+      ? playerCampaignStage
+      : gameMode === "campaign"
       ? window.CAMPAIGN_STAGES[campaignStageNumber - 1] || window.CAMPAIGN_STAGES[0]
       : null;
+    const missingPlayerCampaign = gameMode === "playerCampaignTest" && !campaignStage;
     if (requestedStrength >= 400 && requestedStrength <= 2000 && requestedStrength % 100 === 0) {
       strengthSlider.value = String(requestedStrength);
     }
     difficultyControl.hidden = true;
-    campaignInfo.hidden = gameMode !== "campaign";
+    campaignInfo.hidden = !isCampaignMode;
     onlineInfo.hidden = gameMode !== "online";
     resetButton.hidden = gameMode === "online";
 
@@ -61,6 +79,7 @@ const winningLines = [
     let onlineUid;
     let onlineHostUid;
     let onlineGuestUid;
+    let onlineRules = { routing: "normal" };
     let onlineOpponentRating = 800;
     let onlineReady = false;
     let onlineOpponentReady = false;
@@ -87,18 +106,79 @@ const winningLines = [
       return Array.from(randomValues, (value) => value.toString(16)).join("");
     }
 
+    function isCellBlocked(boardIndex, cellIndex) {
+      const blockedCells = campaignStage?.rules?.blockedCells;
+      if (Array.isArray(blockedCells) && blockedCells.some((blockedCell) =>
+        blockedCell && blockedCell.board === boardIndex && blockedCell.cell === cellIndex
+      )) return true;
+      const blocked = campaignStage?.rules?.blocked;
+      if (blocked === "corners") return [0, 2, 6, 8].includes(cellIndex);
+      if (blocked === "centers") return cellIndex === 4;
+      return false;
+    }
+
+    function getBoardResult(squares, boardIndex) {
+      const winner = getWinner(squares);
+      if (winner) return winner;
+      return squares.every((mark, cellIndex) => mark || isCellBlocked(boardIndex, cellIndex))
+        ? "draw"
+        : null;
+    }
+
     function isBoardClosed(boardIndex) {
-      return boardResults[boardIndex] !== null || cells[boardIndex].every(Boolean);
+      return isBoardClosedIn(cells, boardResults, boardIndex);
     }
 
     function isBoardClosedIn(positionCells, positionResults, boardIndex) {
-      return positionResults[boardIndex] !== null || positionCells[boardIndex].every(Boolean);
+      return positionResults[boardIndex] !== null ||
+        positionCells[boardIndex].every((mark, cellIndex) =>
+          mark || isCellBlocked(boardIndex, cellIndex)
+        );
+    }
+
+    function getNextBoardAfterMove(cellIndex, positionCells = cells, positionResults = boardResults) {
+      const routing = gameMode === "online"
+        ? onlineRules.routing
+        : campaignStage?.rules?.routing;
+      if (routing === "free") return null;
+      const openBoards = positionCells
+        .map((_, index) => index)
+        .filter((index) => !isBoardClosedIn(positionCells, positionResults, index));
+      if (routing === "random") {
+        return openBoards.length
+          ? openBoards[Math.floor(Math.random() * openBoards.length)]
+          : null;
+      }
+      if (routing === "same_row") {
+        const row = Math.floor(cellIndex / 3);
+        const rowBoards = openBoards.filter((boardIndex) => Math.floor(boardIndex / 3) === row);
+        return rowBoards.length ? rowBoards : null;
+      }
+      if (routing === "same_column") {
+        const column = cellIndex % 3;
+        const columnBoards = openBoards.filter((boardIndex) => boardIndex % 3 === column);
+        return columnBoards.length ? columnBoards : null;
+      }
+      if (routing === "clockwise") {
+        const ring = [0, 1, 2, 5, 8, 7, 6, 3];
+        const startIndex = ring.indexOf(cellIndex);
+        const offset = startIndex === -1 ? 0 : startIndex + 1;
+        for (let step = 0; step < ring.length; step += 1) {
+          const destination = ring[(offset + step) % ring.length];
+          if (openBoards.includes(destination)) return destination;
+        }
+        return openBoards.length ? openBoards[0] : null;
+      }
+      const destination = routing === "mirror"
+        ? 8 - cellIndex
+        : routing === "center" ? 4 : cellIndex;
+      return isBoardClosedIn(positionCells, positionResults, destination) ? null : destination;
     }
 
     function updateStatus() {
       statusElement.className = "turn-status";
 
-      if (gameMode === "campaign") {
+      if (isCampaignMode) {
         campaignResult.hidden = !gameResult;
         if (gameResult) updateCampaignResult();
       }
@@ -118,7 +198,9 @@ const winningLines = [
       statusElement.classList.add(currentPlayer.toLowerCase());
       const instruction = nextBoard === null
         ? "Pick any board"
-        : `Play in board ${nextBoard + 1}`;
+        : Array.isArray(nextBoard)
+          ? `Pick a board from ${nextBoard.map((boardIndex) => boardIndex + 1).join(", ")}`
+          : `Play in board ${nextBoard + 1}`;
       if (gameMode === "online") {
         if (!onlineReady) {
           statusElement.textContent = onlineStatusMessage;
@@ -150,7 +232,9 @@ const winningLines = [
         const board = document.createElement("section");
         board.className = "board";
         const closed = isBoardClosed(boardIndex);
-        const isActive = !gameResult && !closed && (nextBoard === null || nextBoard === boardIndex);
+        const boardIsAllowed = nextBoard === null ||
+          (Array.isArray(nextBoard) ? nextBoard.includes(boardIndex) : nextBoard === boardIndex);
+        const isActive = !gameResult && !closed && boardIsAllowed;
         if (isActive) board.classList.add("active");
         if (closed) board.classList.add("closed");
 
@@ -161,19 +245,21 @@ const winningLines = [
         for (let cellIndex = 0; cellIndex < 9; cellIndex += 1) {
           const button = document.createElement("button");
           const mark = cells[boardIndex][cellIndex];
+          const blocked = isCellBlocked(boardIndex, cellIndex);
           button.className = "cell";
           button.type = "button";
           button.textContent = mark || "";
           const onlineTurnBlocked = gameMode === "online" &&
             (!onlineReady || !onlineOpponentReady || onlineBusy || currentPlayer !== humanMark);
-          const aiTurnBlocked = (gameMode === "ai" || gameMode === "campaign") && currentPlayer === aiMark;
+          const aiTurnBlocked = (gameMode === "ai" || isCampaignMode) && currentPlayer === aiMark;
           button.disabled = Boolean(gameResult) || aiThinking || onlineTurnBlocked || aiTurnBlocked ||
-            closed || Boolean(mark) || !isActive;
+            closed || Boolean(mark) || blocked || !isActive;
           button.setAttribute(
             "aria-label",
-            `Board ${boardIndex + 1}, square ${cellIndex + 1}${mark ? `, ${mark}` : ""}`
+            `Board ${boardIndex + 1}, square ${cellIndex + 1}${mark ? `, ${mark}` : blocked ? ", unavailable" : ""}`
           );
           if (mark) button.classList.add(`mark-${mark.toLowerCase()}`);
+          if (blocked) button.classList.add("rule-blocked");
           button.addEventListener("click", () => playMove(boardIndex, cellIndex));
           miniGrid.append(button);
         }
@@ -181,7 +267,7 @@ const winningLines = [
         board.append(miniGrid);
 
         const result = boardResults[boardIndex];
-        if (result !== null || cells[boardIndex].every(Boolean)) {
+        if (isBoardClosed(boardIndex)) {
           const overlay = document.createElement("div");
           const displayResult = result || "draw";
           overlay.className = `board-result ${displayResult.toLowerCase()}`;
@@ -200,28 +286,38 @@ const winningLines = [
     }
 
     function finishMove(boardIndex, cellIndex) {
-      boardResults[boardIndex] = getWinner(cells[boardIndex]);
+      boardResults[boardIndex] = getBoardResult(cells[boardIndex], boardIndex);
 
       const overallWinner = getWinner(boardResults);
       if (overallWinner) {
         gameResult = overallWinner;
-      } else if (boardResults.every((result, index) => result !== null || cells[index].every(Boolean))) {
+      } else if (boardResults.every((result, index) => result !== null || isBoardClosed(index))) {
         gameResult = "draw";
       } else {
         currentPlayer = currentPlayer === "X" ? "O" : "X";
-        nextBoard = isBoardClosed(cellIndex) ? null : cellIndex;
+        nextBoard = getNextBoardAfterMove(cellIndex);
       }
 
-      if (gameResult && gameMode === "campaign" && gameResult === "X") {
-        const completedStages = Number(localStorage.getItem(campaignProgressKey)) || 0;
-        localStorage.setItem(
-          campaignProgressKey,
-          String(Math.max(completedStages, campaignStageNumber))
-        );
+      if (gameResult === "X" && isCampaignMode && campaignStage) {
+        try {
+          if (gameMode === "playerCampaignTest") {
+            const verified = JSON.parse(localStorage.getItem("ultimate-tic-tac-toe-player-campaign-verified") || "[]");
+            const verifiedStages = Array.isArray(verified) ? verified : [];
+            if (!verifiedStages.includes(campaignStage.id)) verifiedStages.push(campaignStage.id);
+            localStorage.setItem("ultimate-tic-tac-toe-player-campaign-verified", JSON.stringify(verifiedStages));
+          } else if (gameMode === "campaign") {
+            const completed = JSON.parse(localStorage.getItem(campaignProgressKey) || "[]");
+            const completedStages = Array.isArray(completed) ? completed : [];
+            if (!completedStages.includes(campaignStage.id)) completedStages.push(campaignStage.id);
+            localStorage.setItem(campaignProgressKey, JSON.stringify(completedStages));
+          }
+        } catch (error) {
+          console.error("Could not save campaign progress.", error);
+        }
       }
 
       render();
-      if (!gameResult && (gameMode === "ai" || gameMode === "campaign") && currentPlayer === aiMark) {
+      if (!gameResult && (gameMode === "ai" || isCampaignMode) && currentPlayer === aiMark) {
         scheduleAiMove();
       }
       if (gameResult && gameMode === "ai") {
@@ -230,8 +326,11 @@ const winningLines = [
     }
 
     function playMove(boardIndex, cellIndex) {
-      if (gameResult || isBoardClosed(boardIndex) || cells[boardIndex][cellIndex]) return;
-      if (nextBoard !== null && nextBoard !== boardIndex) return;
+      if (gameResult || isBoardClosed(boardIndex) || cells[boardIndex][cellIndex] ||
+        isCellBlocked(boardIndex, cellIndex)) return;
+      if (nextBoard !== null && (Array.isArray(nextBoard)
+        ? !nextBoard.includes(boardIndex)
+        : nextBoard !== boardIndex)) return;
       if (gameMode === "online") {
         playOnlineMove(boardIndex, cellIndex);
         return;
@@ -284,12 +383,19 @@ const winningLines = [
 
     function decodeOnlineState(state) {
       const validMark = (mark) => mark === "" || mark === "X" || mark === "O";
+      const validNextBoard = state && (
+        state.nextBoard === -1 ||
+        Number.isInteger(state.nextBoard) && state.nextBoard >= 0 && state.nextBoard < 9 ||
+        Array.isArray(state.nextBoard) && state.nextBoard.length > 0 &&
+          state.nextBoard.every((board) => Number.isInteger(board) && board >= 0 && board < 9) &&
+          new Set(state.nextBoard).size === state.nextBoard.length
+      );
       if (!state || !Array.isArray(state.cells) || state.cells.length !== 9 ||
         !state.cells.every((row) => Array.isArray(row) && row.length === 9 && row.every(validMark)) ||
         !Array.isArray(state.boardResults) || state.boardResults.length !== 9 ||
         !state.boardResults.every(validMark) ||
         !["X", "O"].includes(state.currentPlayer) ||
-        !(state.nextBoard === -1 || Number.isInteger(state.nextBoard) && state.nextBoard >= 0 && state.nextBoard < 9) ||
+        !validNextBoard ||
         !["", "X", "O", "draw"].includes(state.result)) {
         throw new Error("The room has invalid game data. Please create a new room.");
       }
@@ -316,14 +422,16 @@ const winningLines = [
     function calculateOnlineMove(position, boardIndex, cellIndex) {
       if (position.gameResult || isBoardClosedIn(position.cells, position.boardResults, boardIndex) ||
         position.cells[boardIndex][cellIndex] ||
-        position.nextBoard !== null && position.nextBoard !== boardIndex) {
+        position.nextBoard !== null && (Array.isArray(position.nextBoard)
+          ? !position.nextBoard.includes(boardIndex)
+          : position.nextBoard !== boardIndex)) {
         return null;
       }
 
       const nextCells = position.cells.map((row) => [...row]);
       const nextResults = [...position.boardResults];
       nextCells[boardIndex][cellIndex] = position.currentPlayer;
-      nextResults[boardIndex] = getWinner(nextCells[boardIndex]);
+      nextResults[boardIndex] = getBoardResult(nextCells[boardIndex], boardIndex);
 
       const overallWinner = getWinner(nextResults);
       let nextPlayer = position.currentPlayer;
@@ -332,12 +440,12 @@ const winningLines = [
       if (overallWinner) {
         nextResult = overallWinner;
       } else if (nextResults.every((result, index) =>
-        result !== null || nextCells[index].every(Boolean)
+        result !== null || isBoardClosedIn(nextCells, nextResults, index)
       )) {
         nextResult = "draw";
       } else {
         nextPlayer = position.currentPlayer === "X" ? "O" : "X";
-        nextBoard = isBoardClosedIn(nextCells, nextResults, cellIndex) ? null : cellIndex;
+        nextBoard = getNextBoardAfterMove(cellIndex, nextCells, nextResults);
       }
 
       return {
@@ -444,6 +552,24 @@ const winningLines = [
           }
 
           onlineHostUid = room.hostUid;
+          onlineRules = {
+            routing: ["mirror", "free", "random", "same_row", "same_column", "clockwise"].includes(room.customRules?.routing)
+              ? room.customRules.routing
+              : "normal"
+          };
+          rulesCopy.textContent = onlineRules.routing === "mirror"
+            ? "In this mirrored match, the square you choose sends your opponent to the reflected square's board. If that destination is closed, they may choose any open board. Get three little boards in a row to win!"
+            : onlineRules.routing === "free"
+              ? "Free-choice match: after every move, either player may choose any open board. Get three little boards in a row to win!"
+              : onlineRules.routing === "random"
+                ? "Random-routing match: after every move, the game randomly chooses an open board for the next player. Get three little boards in a row to win!"
+                : onlineRules.routing === "same_row"
+                  ? "Same-row match: the next player may choose any open board in the row matching the square just played."
+                  : onlineRules.routing === "same_column"
+                    ? "Same-column match: the next player may choose any open board in the column matching the square just played."
+                    : onlineRules.routing === "clockwise"
+                      ? "Clockwise match: the next player is sent to the next open board around the outer ring."
+                      : "The square you choose sends your opponent to the matching little board. If that board is already won or full, they can choose any open board. Get three little boards in a row to win!";
           onlineGuestUid = typeof room.guestUid === "string" ? room.guestUid : null;
           humanMark = room.hostUid === onlineUid ? "X" : "O";
           onlineOpponentRating = humanMark === "X"
@@ -454,11 +580,24 @@ const winningLines = [
             onlineGuestUid !== onlineHostUid
           );
           onlineRoomCode.textContent = roomCode;
-          onlineMessage.textContent = humanMark === "X"
+          const seatingMessage = humanMark === "X"
             ? onlineOpponentReady
               ? "You are X. Your friend is O."
               : "You are X. Share the invite link and wait for your friend to join."
             : "You are O. The host plays X.";
+          const customRuleMessages = {
+            mirror: " Mirrored routing is on.",
+            free: " Free board choice is on.",
+            random: " Random board routing is on.",
+            same_row: " Same-row routing is on.",
+            same_column: " Same-column routing is on.",
+            clockwise: " Clockwise routing is on."
+          };
+          const customRuleMessage = customRuleMessages[onlineRules.routing] || "";
+          const handicapMessage = room.customRules?.setup?.length
+            ? ` ${room.customRules.setup.length} handicap marks are on the starting board.`
+            : "";
+          onlineMessage.textContent = `${seatingMessage}${customRuleMessage}${handicapMessage}`;
           updateOnlinePlayerLabels();
 
           try {
@@ -503,11 +642,11 @@ const winningLines = [
       const moves = [];
       for (const boardIndex of boardIndices) {
         for (let cellIndex = 0; cellIndex < 9; cellIndex += 1) {
-          if (positionCells[boardIndex][cellIndex]) continue;
+          if (positionCells[boardIndex][cellIndex] || isCellBlocked(boardIndex, cellIndex)) continue;
           const localBoard = [...positionCells[boardIndex]];
           localBoard[cellIndex] = player;
           const results = [...positionResults];
-          results[boardIndex] = getWinner(localBoard);
+          results[boardIndex] = getBoardResult(localBoard, boardIndex);
           moves.push({ boardIndex, cellIndex, localBoard, results });
         }
       }
@@ -515,8 +654,11 @@ const winningLines = [
     }
 
     function availableBoards(forcedBoard, positionCells = cells, positionResults = boardResults) {
-      return forcedBoard !== null && !isBoardClosedIn(positionCells, positionResults, forcedBoard)
-        ? [forcedBoard]
+      const allowedBoards = forcedBoard === null
+        ? null
+        : Array.isArray(forcedBoard) ? forcedBoard : [forcedBoard];
+      return allowedBoards
+        ? allowedBoards.filter((index) => !isBoardClosedIn(positionCells, positionResults, index))
         : positionCells.map((_, index) => index)
           .filter((index) => !isBoardClosedIn(positionCells, positionResults, index));
     }
@@ -533,7 +675,7 @@ const winningLines = [
         const aiCount = line.filter((board) => position.results[board] === aiMark).length;
         const opponentCount = line.filter((board) => position.results[board] === opponentMark).length;
         const blockedByDraw = line.some((board) =>
-          position.results[board] === null && position.cells[board].every(Boolean)
+          position.results[board] === null && isBoardClosedIn(position.cells, position.results, board)
         );
 
         if (!opponentWins && !blockedByDraw) score += metaWeights[aiCount];
@@ -566,9 +708,7 @@ const winningLines = [
       const nextCells = position.cells.slice();
       nextCells[move.boardIndex] = move.localBoard;
       const nextResults = move.results;
-      const nextBoard = isBoardClosedIn(nextCells, nextResults, move.cellIndex)
-        ? null
-        : move.cellIndex;
+      const nextBoard = getNextBoardAfterMove(move.cellIndex, nextCells, nextResults);
 
       return {
         cells: nextCells,
@@ -712,7 +852,9 @@ const winningLines = [
         ratedMatchHandled = false;
         ratingNotice.hidden = true;
       }
-      currentPlayer = gameMode === "ai" && humanMark === "O" ? aiMark : "X";
+      currentPlayer = isCampaignMode
+        ? campaignStage?.firstPlayer === "O" ? aiMark : humanMark
+        : gameMode === "ai" && humanMark === "O" ? aiMark : "X";
       nextBoard = null;
       gameResult = null;
       aiThinking = false;
@@ -727,7 +869,7 @@ const winningLines = [
             : aiMark === "X" ? ` AI · ${strengthSlider.value}` : " You";
         secondPlayerElement.lastChild.textContent = gameMode === "local"
           ? " Player 2"
-          : gameMode === "campaign"
+          : isCampaignMode
             ? ` AI · ${campaignStage.rating}`
             : aiMark === "O" ? ` AI · ${strengthSlider.value}` : " You";
       }
@@ -735,34 +877,144 @@ const winningLines = [
       strengthValue.textContent = strengthSlider.value;
       if (campaignStage) {
         document.querySelector("#campaign-stage").textContent =
-          `Challenge ${campaignStageNumber} of ${window.CAMPAIGN_STAGES.length}`;
+          gameMode === "playerCampaign" || gameMode === "playerCampaignTest"
+            ? "Player-made challenge"
+            : `Challenge ${campaignStageNumber} of ${window.CAMPAIGN_STAGES.length}`;
         document.querySelector("#campaign-name").textContent = campaignStage.name;
         document.querySelector("#campaign-rating").textContent = `${campaignStage.rating} Elo-style`;
         document.querySelector("#campaign-description").textContent = campaignStage.description;
-        for (const mark of campaignStage.setup) {
-          cells[mark.board][mark.cell] = "O";
+        const routing = campaignStage.rules?.routing;
+        const routingInstructions = routing === "mirror"
+          ? "Moves send the next player to the reflected square's board."
+          : routing === "free"
+            ? "After every move, either player can choose any open board."
+            : routing === "center"
+              ? "Moves send the next player to the center board when it is open."
+              : routing === "random"
+                ? "The game randomly chooses an open board after each move."
+                : routing === "same_row"
+                  ? "The next player may choose any open board in the row matching the square just played."
+                  : routing === "same_column"
+                    ? "The next player may choose any open board in the column matching the square just played."
+                    : routing === "clockwise"
+                      ? "Moves send the next player clockwise to the next open outer board."
+                      : "The square you choose sends your opponent to the matching little board.";
+        const blockedInstructions = campaignStage.rules?.blocked === "corners"
+          ? " The four corners of each small board are closed."
+          : campaignStage.rules?.blocked === "centers"
+            ? " The center square of each small board is closed."
+            : "";
+        rulesCopy.textContent =
+          `${routingInstructions}${blockedInstructions} If a destination board is closed, choose any open board. Three little boards in a row wins.`;
+        for (const mark of campaignStage.setup || []) {
+          if (Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
+            Number.isInteger(mark.cell) && mark.cell >= 0 && mark.cell < 9) {
+            cells[mark.board][mark.cell] = mark.mark === "X" ? "X" : "O";
+          }
         }
-        boardResults = cells.map(getWinner);
+        boardResults = cells.map((board, index) => getBoardResult(board, index));
+        const startBoard = campaignStage.rules?.startBoard;
+        if (Number.isInteger(startBoard) && startBoard >= 0 && startBoard < 9 &&
+          !isBoardClosed(startBoard)) {
+          nextBoard = startBoard;
+        }
+      } else {
+        rulesCopy.textContent =
+          "The square you choose sends your opponent to the matching little board. If that board is already won or full, they can choose any open board. Get three little boards in a row to win!";
       }
       render();
-      if (gameMode === "ai" && currentPlayer === aiMark) scheduleAiMove();
+      if ((gameMode === "ai" || isCampaignMode) && currentPlayer === aiMark) scheduleAiMove();
     }
 
     function updateCampaignResult() {
       const won = gameResult === "X";
-      const complete = campaignStageNumber >= window.CAMPAIGN_STAGES.length;
+      const nextStage = gameMode === "campaign"
+        ? window.CAMPAIGN_STAGES[campaignStageNumber]
+        : null;
       campaignResultTitle.textContent = won
-        ? complete ? "Campaign complete!" : "Challenge cleared!"
+        ? "Challenge cleared!"
         : "Challenge not cleared";
       campaignResultCopy.textContent = won
-        ? complete
-          ? "You defeated every opponent. You are the Ultimate Tic-Tac-Toe champion!"
-          : `${window.CAMPAIGN_STAGES[campaignStageNumber]?.name || "Next challenge"} is now unlocked.`
+        ? gameMode === "playerCampaignTest"
+          ? "Challenge verified! Return to the campaign page to publish it for everyone."
+          : gameMode === "playerCampaign"
+          ? "You beat this player-made challenge. Try another one or make your own!"
+          : nextStage
+            ? `${nextStage.name} is ready whenever you want another challenge.`
+            : "You defeated every campaign opponent. You are the Ultimate Tic-Tac-Toe champion!"
         : "Study the board, adjust your strategy, and give this challenge another try.";
-      campaignNext.hidden = !won || complete;
+      campaignNext.hidden = !won || !nextStage;
       if (!campaignNext.hidden) {
         campaignNext.href = `index.html?mode=campaign&stage=${campaignStageNumber + 1}`;
-        campaignNext.textContent = "Next challenge";
+        campaignNext.textContent = "Another challenge";
+      }
+    }
+
+    function showUnavailablePlayerCampaign(message) {
+      document.querySelector("#campaign-stage").textContent = "Player-made challenge";
+      document.querySelector("#campaign-name").textContent = "Challenge unavailable";
+      document.querySelector("#campaign-rating").textContent = "";
+      document.querySelector("#campaign-description").textContent = message;
+      statusElement.textContent = "Return to the campaign page to choose another challenge.";
+      boardsElement.hidden = true;
+      resetButton.hidden = true;
+      const menuLink = document.querySelector(".game-actions .home-link");
+      menuLink.href = "campaign.html";
+      menuLink.textContent = "Back to challenges";
+    }
+
+    async function loadCommunityCampaign() {
+      const challengeId = query.get("id");
+      if (!challengeId || !window.firebase || !window.FIREBASE_CONFIG) {
+        showUnavailablePlayerCampaign("This community challenge could not be loaded.");
+        return;
+      }
+
+      try {
+        const app = window.firebase.apps.length
+          ? window.firebase.app()
+          : window.firebase.initializeApp(window.FIREBASE_CONFIG);
+        const snapshot = await window.firebase.database(app)
+          .ref(`communityCampaigns/${challengeId}`).once("value");
+        const stage = snapshot.val();
+        const valid = stage && stage.id === challengeId &&
+          typeof stage.name === "string" && stage.name.length > 0 && stage.name.length <= 40 &&
+          typeof stage.description === "string" && stage.description.length <= 120 &&
+          Number.isFinite(Number(stage.rating)) && Number(stage.rating) >= 400 && Number(stage.rating) <= 1500 &&
+          (stage.rules === undefined || stage.rules === null ||
+            typeof stage.rules === "object" && !Array.isArray(stage.rules)) &&
+          Array.isArray(stage.setup) && stage.setup.length <= 24 &&
+          stage.setup.every((mark) => mark && Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
+            Number.isInteger(mark.cell) && mark.cell >= 0 && mark.cell < 9 &&
+            ["X", "O"].includes(mark.mark)) &&
+          ["X", "O"].includes(stage.firstPlayer || "X") &&
+          ["normal", "mirror", "free", "center", "random", "same_row", "same_column", "clockwise"]
+            .includes(stage.rules?.routing || "normal") &&
+          (!stage.rules?.blockedCells || Array.isArray(stage.rules.blockedCells) &&
+            stage.rules.blockedCells.length <= 40 &&
+            stage.rules.blockedCells.every((cell) => cell && Number.isInteger(cell.board) && cell.board >= 0 &&
+              cell.board < 9 && Number.isInteger(cell.cell) && cell.cell >= 0 && cell.cell < 9 &&
+              !stage.setup.some((mark) => mark.board === cell.board && mark.cell === cell.cell)));
+        if (!valid) {
+          showUnavailablePlayerCampaign("This community challenge is missing, or its saved data is invalid.");
+          return;
+        }
+
+        campaignStage = {
+          ...stage,
+          firstPlayer: stage.firstPlayer || "X",
+          rules: {
+            ...stage.rules,
+            routing: stage.rules?.routing || "normal",
+            blockedCells: stage.rules?.blockedCells || []
+          }
+        };
+        newGame();
+      } catch (error) {
+        console.error("Could not load the community challenge.", error);
+        showUnavailablePlayerCampaign(
+          "Community challenges are unavailable. Check your connection and Firebase Realtime Database read rules."
+        );
       }
     }
 
@@ -817,5 +1069,10 @@ const winningLines = [
       strengthValue.textContent = strengthSlider.value;
     });
     strengthSlider.addEventListener("change", newGame);
-    newGame();
-    if (gameMode === "online") connectOnlineGame();
+    if (missingPlayerCampaign) {
+      showUnavailablePlayerCampaign("This challenge is no longer saved in this browser.");
+    } else {
+      if (gameMode !== "playerCampaign") newGame();
+      if (gameMode === "online") connectOnlineGame();
+      if (gameMode === "playerCampaign") loadCommunityCampaign();
+    }
