@@ -221,7 +221,211 @@ window.CAMPAIGN_STAGES = [
     description: "The strongest opponent in the campaign. Bring everything you have learned.",
     setup: [],
     rules: {}
-  }
+  },
+  {
+    id: "loose-leash",
+    name: "Loose Leash",
+    rating: 450,
+    description: "After your move, the AI may choose any open board. After its move, your destination is routed normally.",
+    setup: [{ board: 4, cell: 4, mark: "O" }],
+    rules: { routing: "ai_free" }
+  },
+  {
+    id: "echo-play",
+    name: "Echo Play",
+    rating: 500,
+    description: "Each of your moves echoes onto the opposite mini-board and opposite square when that spot is open.",
+    setup: [{ board: 4, cell: 0, mark: "O" }],
+    rules: { routing: "player_mirror" }
+  },
+  {
+    id: "crossroads-closed",
+    name: "Crossroads Closed",
+    rating: 500,
+    description: "The center squares are closed only in the five boards that form a cross.",
+    setup: [],
+    rules: {
+      blockedCells: [
+        { board: 1, cell: 4 }, { board: 3, cell: 4 }, { board: 4, cell: 4 },
+        { board: 5, cell: 4 }, { board: 7, cell: 4 }
+      ]
+    }
+  },
+  {
+    id: "tight-turn",
+    name: "Tight Turn",
+    rating: 550,
+    description: "Start in the center board, where the corner squares are closed. Find a route through the middle.",
+    setup: [{ board: 4, cell: 1, mark: "O" }],
+    rules: {
+      startBoard: 4,
+      blockedCells: [
+        { board: 4, cell: 0 }, { board: 4, cell: 2 },
+        { board: 4, cell: 6 }, { board: 4, cell: 8 }
+      ]
+    }
+  },
+  {
+    id: "reflected-detour",
+    name: "Reflected Detour",
+    rating: 600,
+    description: "Mirrored routing is on, and one square in the center board is closed. Plan your destination carefully.",
+    setup: [{ board: 4, cell: 0, mark: "O" }],
+    rules: { routing: "mirror", blockedCells: [{ board: 4, cell: 8 }] }
+  },
+  {
+    id: "random-dispatch",
+    name: "Random Dispatch",
+    rating: 600,
+    description: "Every move sends the next player to a randomly chosen open board. Adapt to the surprise.",
+    setup: [{ board: 0, cell: 4, mark: "O" }],
+    rules: { routing: "random" }
+  },
+  {
+    id: "row-runner",
+    name: "Row Runner",
+    rating: 650,
+    description: "The next player chooses an open board from the row matching the square just played.",
+    setup: [{ board: 4, cell: 0, mark: "O" }],
+    rules: { routing: "same_row", startBoard: 4 }
+  },
+  {
+    id: "column-climb",
+    name: "Column Climb",
+    rating: 650,
+    description: "Keep an eye on the columns: each move limits the next player to that column of boards.",
+    setup: [{ board: 2, cell: 4, mark: "O" }],
+    rules: { routing: "same_column", startBoard: 2 }
+  },
+  {
+    id: "clockwork-corner",
+    name: "Clockwork Corner",
+    rating: 700,
+    description: "Routing moves clockwise around the outer ring. The center square sends play to the first open ring board.",
+    setup: [{ board: 0, cell: 4, mark: "O" }],
+    rules: { routing: "clockwise", startBoard: 0 }
+  },
+  {
+    id: "echo-alley",
+    name: "Echo Alley",
+    rating: 700,
+    description: "Your marks echo across the big board, but a closed destination can block the echo.",
+    setup: [{ board: 0, cell: 0, mark: "O" }],
+    rules: {
+      routing: "player_mirror",
+      blockedCells: [{ board: 8, cell: 8 }, { board: 4, cell: 4 }]
+    }
+  },
+  {
+    id: "ai-open-season",
+    name: "AI Open Season",
+    rating: 750,
+    description: "The AI can roam after your move, but its own move sends you to the matching board.",
+    setup: [
+      { board: 4, cell: 0, mark: "O" },
+      { board: 4, cell: 8, mark: "X" }
+    ],
+    rules: { routing: "ai_free" }
+  },
+  {
+    id: "broken-compass",
+    name: "Broken Compass",
+    rating: 800,
+    description: "Random routing returns, with the center square closed in two busy boards.",
+    setup: [{ board: 4, cell: 0, mark: "O" }, { board: 4, cell: 8, mark: "X" }],
+    rules: {
+      routing: "random",
+      blockedCells: [{ board: 1, cell: 4 }, { board: 7, cell: 4 }]
+    }
+  },
+  {
+    id: "four-locks",
+    name: "Four Locks",
+    rating: 850,
+    description: "Four carefully placed squares are unavailable. Find a way to win around the gaps.",
+    setup: [
+      { board: 4, cell: 0, mark: "O" },
+      { board: 0, cell: 4, mark: "X" },
+      { board: 8, cell: 4, mark: "O" }
+    ],
+    rules: {
+      blockedCells: [
+        { board: 0, cell: 0 }, { board: 2, cell: 4 },
+        { board: 6, cell: 4 }, { board: 8, cell: 8 }
+      ]
+    }
+  },
+  {
+    id: "players-pick",
+    name: "Player's Pick",
+    rating: 1400,
+    description: "After the AI moves you may choose any board. Your move routes the AI normally, so set a trap.",
+    setup: [{ board: 4, cell: 4, mark: "O" }],
+    rules: { routing: "human_free" }
+  },
+  {
+    id: "More open doors",
+    name: "More Open Doors",
+    rating: 1000,
+    description: "Move to any board you want but dont get locked out of your win.",
+    setup: [],
+    rules: { routing: "free" }
+  },
 ];
 
-window.CAMPAIGN_STAGES.sort((a, b) => a.rating - b.rating || a.name.localeCompare(b.name));
+// This list controls campaign progression independently of each challenge's AI strength.
+const CAMPAIGN_STAGE_ORDER = [
+  "first-steps",
+  "center-spark",
+  "loose-leash",
+  "reverse-dispatch",
+  "corner-kickoff",
+  "crossroads-closed",
+  "echo-play",
+  "open-doors",
+  "players-pick",
+  "center-gravity",
+  "tight-turn",
+  "two-board-start",
+  "corner-ban",
+  "corner-practice",
+  "forked-opening",
+  "random-dispatch",
+  "reflected-detour",
+  "center-ban",
+  "column-climb",
+  "row-runner",
+  "clockwork-corner",
+  "diagonal-drill",
+  "echo-alley",
+  "mirror-maze",
+  "ai-open-season",
+  "free-range",
+  "open-doors-strong",
+  "board-tactician",
+  "broken-compass",
+  "center-board-conquered",
+  "center-gravity-strong",
+  "four-mark-frenzy",
+  "center-lock",
+  "four-locks",
+  "head-start",
+  "looking-glass",
+  "More open doors",
+  "the-climber",
+  "two-corner-trap",
+  "sharp-counterplay",
+  "final-test"
+];
+const campaignStageOrder = new Map(CAMPAIGN_STAGE_ORDER.map((id, index) => [id, index]));
+
+window.CAMPAIGN_STAGES.sort((a, b) => {
+  const aOrder = campaignStageOrder.get(a.id);
+  const bOrder = campaignStageOrder.get(b.id);
+  if (aOrder !== undefined || bOrder !== undefined) {
+    if (aOrder === undefined) return 1;
+    if (bOrder === undefined) return -1;
+    return aOrder - bOrder;
+  }
+  return a.rating - b.rating || a.name.localeCompare(b.name);
+});

@@ -29,11 +29,48 @@ const winningLines = [
     const campaignProgressKey = "ultimate-tic-tac-toe-campaign";
     const query = new URLSearchParams(window.location.search);
     const requestedMode = query.get("mode");
-    const gameMode = ["ai", "campaign", "playerCampaign", "playerCampaignTest", "online"].includes(requestedMode)
+    const gameMode = ["local", "ai", "campaign", "playerCampaign", "playerCampaignTest", "online"].includes(requestedMode)
       ? requestedMode
       : "local";
     const isCampaignMode = ["campaign", "playerCampaign", "playerCampaignTest"].includes(gameMode);
     const roomCode = (query.get("room") || "").toUpperCase();
+    function parseLocalSetup() {
+      try {
+        const parsed = JSON.parse(query.get("setup") || "[]");
+        if (!Array.isArray(parsed) || parsed.length > 40 ||
+          !parsed.every((mark) => mark && Number.isInteger(mark.board) && mark.board >= 0 && mark.board < 9 &&
+            Number.isInteger(mark.cell) && mark.cell >= 0 && mark.cell < 9 &&
+            ["X", "O"].includes(mark.mark))) return [];
+        return parsed;
+      } catch {
+        return [];
+      }
+    }
+    function parseLocalBlockedCells() {
+      try {
+        const parsed = JSON.parse(query.get("blocked") || "[]");
+        if (!Array.isArray(parsed) || parsed.length > 40 ||
+          !parsed.every((cell) => cell && Number.isInteger(cell.board) && cell.board >= 0 && cell.board < 9 &&
+            Number.isInteger(cell.cell) && cell.cell >= 0 && cell.cell < 9)) return [];
+        return parsed;
+      } catch {
+        return [];
+      }
+    }
+    const localRoutingOptions = ["normal", "mirror", "free", "center", "random", "same_row", "same_column", "clockwise"];
+    const localRules = {
+      routing: localRoutingOptions.includes(query.get("routing")) ? query.get("routing") : "normal",
+      firstPlayer: query.get("firstPlayer") === "O" ? "O" : "X",
+      setup: parseLocalSetup(),
+      blockedCells: parseLocalBlockedCells(),
+      startBoard: query.has("startBoard") ? Number(query.get("startBoard")) : -1
+    };
+    const localStartingMarks = new Set(
+      localRules.setup.map(({ board, cell }) => `${board}:${cell}`)
+    );
+    localRules.blockedCells = localRules.blockedCells.filter(
+      ({ board, cell }) => !localStartingMarks.has(`${board}:${cell}`)
+    );
     let humanMark = gameMode === "ai" && query.get("player") === "O" ? "O" : "X";
     const aiMark = humanMark === "X" ? "O" : "X";
     const requestedStrength = Number(query.get("elo"));
@@ -107,7 +144,9 @@ const winningLines = [
     }
 
     function isCellBlocked(boardIndex, cellIndex) {
-      const blockedCells = campaignStage?.rules?.blockedCells;
+      const blockedCells = gameMode === "local"
+        ? localRules.blockedCells
+        : campaignStage?.rules?.blockedCells;
       if (Array.isArray(blockedCells) && blockedCells.some((blockedCell) =>
         blockedCell && blockedCell.board === boardIndex && blockedCell.cell === cellIndex
       )) return true;
@@ -125,6 +164,24 @@ const winningLines = [
         : null;
     }
 
+    function applyMoveToPosition(positionCells, positionResults, boardIndex, cellIndex, mark) {
+      positionCells[boardIndex][cellIndex] = mark;
+      positionResults[boardIndex] = getBoardResult(positionCells[boardIndex], boardIndex);
+
+      if (!isCampaignMode || campaignStage?.rules?.routing !== "player_mirror" ||
+        mark !== humanMark) return;
+
+      const mirroredBoard = 8 - boardIndex;
+      const mirroredCell = 8 - cellIndex;
+      if ((mirroredBoard === boardIndex && mirroredCell === cellIndex) ||
+        isBoardClosedIn(positionCells, positionResults, mirroredBoard) ||
+        positionCells[mirroredBoard][mirroredCell] ||
+        isCellBlocked(mirroredBoard, mirroredCell)) return;
+
+      positionCells[mirroredBoard][mirroredCell] = mark;
+      positionResults[mirroredBoard] = getBoardResult(positionCells[mirroredBoard], mirroredBoard);
+    }
+
     function isBoardClosed(boardIndex) {
       return isBoardClosedIn(cells, boardResults, boardIndex);
     }
@@ -136,11 +193,18 @@ const winningLines = [
         );
     }
 
-    function getNextBoardAfterMove(cellIndex, positionCells = cells, positionResults = boardResults) {
+    function getNextBoardAfterMove(
+      cellIndex,
+      positionCells = cells,
+      positionResults = boardResults,
+      movingPlayer = null
+    ) {
       const routing = gameMode === "online"
         ? onlineRules.routing
-        : campaignStage?.rules?.routing;
+        : gameMode === "local" ? localRules.routing : campaignStage?.rules?.routing;
       if (routing === "free") return null;
+      if (routing === "ai_free" && movingPlayer === humanMark) return null;
+      if (routing === "human_free" && movingPlayer === aiMark) return null;
       const openBoards = positionCells
         .map((_, index) => index)
         .filter((index) => !isBoardClosedIn(positionCells, positionResults, index));
@@ -286,7 +350,8 @@ const winningLines = [
     }
 
     function finishMove(boardIndex, cellIndex) {
-      boardResults[boardIndex] = getBoardResult(cells[boardIndex], boardIndex);
+      boardResults = cells.map((board, index) => getBoardResult(board, index));
+      const movingPlayer = currentPlayer;
 
       const overallWinner = getWinner(boardResults);
       if (overallWinner) {
@@ -295,7 +360,7 @@ const winningLines = [
         gameResult = "draw";
       } else {
         currentPlayer = currentPlayer === "X" ? "O" : "X";
-        nextBoard = getNextBoardAfterMove(cellIndex);
+        nextBoard = getNextBoardAfterMove(cellIndex, cells, boardResults, movingPlayer);
       }
 
       if (gameResult === "X" && isCampaignMode && campaignStage) {
@@ -337,7 +402,7 @@ const winningLines = [
       }
       if (gameMode !== "local" && (currentPlayer !== humanMark || aiThinking)) return;
 
-      cells[boardIndex][cellIndex] = currentPlayer;
+      applyMoveToPosition(cells, boardResults, boardIndex, cellIndex, currentPlayer);
       finishMove(boardIndex, cellIndex);
     }
 
@@ -352,7 +417,7 @@ const winningLines = [
     }
 
     async function saveRatedResult(opponentRating) {
-      if (ratedMatchHandled || !gameResult) return;
+      if (!["ai", "online"].includes(gameMode) || ratedMatchHandled || !gameResult) return;
       ratedMatchHandled = true;
       ratingNotice.hidden = false;
       ratingNotice.textContent = "Saving your rating…";
@@ -640,11 +705,18 @@ const winningLines = [
       for (const boardIndex of boardIndices) {
         for (let cellIndex = 0; cellIndex < 9; cellIndex += 1) {
           if (positionCells[boardIndex][cellIndex] || isCellBlocked(boardIndex, cellIndex)) continue;
-          const localBoard = [...positionCells[boardIndex]];
-          localBoard[cellIndex] = player;
+          const nextCells = positionCells.slice();
+          nextCells[boardIndex] = [...positionCells[boardIndex]];
+          if (isCampaignMode && campaignStage?.rules?.routing === "player_mirror" &&
+            player === humanMark) {
+            const mirroredBoard = 8 - boardIndex;
+            if (mirroredBoard !== boardIndex) {
+              nextCells[mirroredBoard] = [...positionCells[mirroredBoard]];
+            }
+          }
           const results = [...positionResults];
-          results[boardIndex] = getBoardResult(localBoard, boardIndex);
-          moves.push({ boardIndex, cellIndex, localBoard, results });
+          applyMoveToPosition(nextCells, results, boardIndex, cellIndex, player);
+          moves.push({ boardIndex, cellIndex, cells: nextCells, results });
         }
       }
       return moves;
@@ -702,10 +774,9 @@ const winningLines = [
     }
 
     function applySearchMove(position, move, player) {
-      const nextCells = position.cells.slice();
-      nextCells[move.boardIndex] = move.localBoard;
+      const nextCells = move.cells;
       const nextResults = move.results;
-      const nextBoard = getNextBoardAfterMove(move.cellIndex, nextCells, nextResults);
+      const nextBoard = getNextBoardAfterMove(move.cellIndex, nextCells, nextResults, player);
 
       return {
         cells: nextCells,
@@ -831,7 +902,7 @@ const winningLines = [
         const move = chooseAiMove();
         aiThinking = false;
         if (move) {
-          cells[move.boardIndex][move.cellIndex] = aiMark;
+          applyMoveToPosition(cells, boardResults, move.boardIndex, move.cellIndex, aiMark);
           finishMove(move.boardIndex, move.cellIndex);
         }
       }, 450);
@@ -849,7 +920,9 @@ const winningLines = [
         ratedMatchHandled = false;
         ratingNotice.hidden = true;
       }
-      currentPlayer = isCampaignMode
+      currentPlayer = gameMode === "local"
+        ? localRules.firstPlayer
+        : isCampaignMode
         ? campaignStage?.firstPlayer === "O" ? aiMark : humanMark
         : gameMode === "ai" && humanMark === "O" ? aiMark : "X";
       nextBoard = null;
@@ -883,6 +956,12 @@ const winningLines = [
         const routing = campaignStage.rules?.routing;
         const routingInstructions = routing === "mirror"
           ? "Moves send the next player to the reflected square's board."
+          : routing === "ai_free"
+            ? "After you move, the AI may choose any board. After the AI moves, your destination is routed normally."
+            : routing === "human_free"
+              ? "After the AI moves, you may choose any board. Your move sends the AI to the matching board."
+            : routing === "player_mirror"
+              ? "Your move also appears on the opposite mini-board in the reflected square, if it is open. AI moves do not mirror."
           : routing === "free"
             ? "After every move, either player can choose any open board."
             : routing === "center"
@@ -915,6 +994,27 @@ const winningLines = [
           !isBoardClosed(startBoard)) {
           nextBoard = startBoard;
         }
+      } else if (gameMode === "local") {
+        for (const mark of localRules.setup) {
+          cells[mark.board][mark.cell] = mark.mark;
+        }
+        boardResults = cells.map((board, index) => getBoardResult(board, index));
+        if (Number.isInteger(localRules.startBoard) && localRules.startBoard >= 0 &&
+          localRules.startBoard < 9 && !isBoardClosed(localRules.startBoard)) {
+          nextBoard = localRules.startBoard;
+        }
+        const routingInstructions = {
+          normal: "The square you choose sends the next player to the matching little board.",
+          mirror: "The square you choose sends the next player to the reflected square's board.",
+          free: "After every move, either player can choose any open board.",
+          center: "Moves send the next player to the center board when it is open.",
+          random: "The game randomly chooses an open board after every move.",
+          same_row: "The next player may choose any open board in the row matching the square just played.",
+          same_column: "The next player may choose any open board in the column matching the square just played.",
+          clockwise: "Moves send the next player clockwise to the next open outer board."
+        };
+        rulesCopy.textContent =
+          `${routingInstructions[localRules.routing]} If a destination board is closed, choose any open board. Three little boards in a row wins.`;
       } else {
         rulesCopy.textContent =
           "The square you choose sends your opponent to the matching little board. If that board is already won or full, they can choose any open board. Get three little boards in a row to win!";
@@ -998,7 +1098,7 @@ const winningLines = [
             Number.isInteger(mark.cell) && mark.cell >= 0 && mark.cell < 9 &&
             ["X", "O"].includes(mark.mark)) &&
           ["X", "O"].includes(stage.firstPlayer || "X") &&
-          ["normal", "mirror", "free", "center", "random", "same_row", "same_column", "clockwise"]
+          ["normal", "mirror", "free", "center", "random", "same_row", "same_column", "clockwise", "ai_free", "human_free", "player_mirror"]
             .includes(stage.rules?.routing || "normal") &&
           (!stage.rules?.blockedCells || Array.isArray(stage.rules.blockedCells) &&
             stage.rules.blockedCells.length <= 40 &&

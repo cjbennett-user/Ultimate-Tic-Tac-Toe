@@ -206,12 +206,19 @@
     }
 
     .turn-status {
+      width: fit-content;
+      max-width: 100%;
+      padding: 5px 9px;
+      border-left: 3px solid transparent;
+      border-radius: 5px;
+      background: #ffffff08;
       font-size: clamp(1rem, 3vw, 1.2rem);
       font-weight: 750;
+      line-height: 1.35;
     }
 
-    .turn-status.x { color: var(--x); }
-    .turn-status.o { color: var(--o); }
+    .turn-status.x { border-color: var(--x); color: var(--x); }
+    .turn-status.o { border-color: var(--o); color: var(--o); }
     .turn-status.won { color: var(--accent); }
 
     .reset, .home-link {
@@ -250,12 +257,22 @@
     }
 
     .board.active {
-      border-color: var(--accent);
-      background: #c6f36b0d;
-      box-shadow: 0 0 0 1px #c6f36b30, 0 0 24px #c6f36b12;
+      border: 2px solid var(--accent);
+      background: #344126;
+      box-shadow: 0 0 0 2px #c6f36b70, 0 0 24px #c6f36b35;
     }
 
-    .board:has(.cell:hover):not(.closed) { border-color: #69738a; }
+    .board.active .cell:not(:disabled) {
+      background: #455538;
+      box-shadow: inset 0 0 0 1px #c6f36b85;
+    }
+
+    .board.active .cell:not(:disabled):hover {
+      background: #5b7044;
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .board:has(.cell:hover):not(.closed):not(.active) { border-color: #69738a; }
 
     .mini-grid {
       width: 100%;
@@ -342,6 +359,8 @@
       .reset { padding: 9px 11px; }
       .game-actions { gap: 5px; }
       .board { border-radius: 9px; }
+      .board.active { border-width: 3px; }
+      .board.active .cell:not(:disabled) { background: #4a5b3b; }
       .board-result { border-radius: 8px; }
     }
 

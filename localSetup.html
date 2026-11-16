@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111522">
+  <title>Same-device play | Ultimate Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="onlineSetup.css">
+</head>
+<body>
+  <main class="online-setup">
+    <header>
+      <p class="eyebrow">Take turns on one device</p>
+      <h1>Same-device match</h1>
+      <p class="intro">Choose optional house rules, then pass the device between players.</p>
+    </header>
+
+    <section class="online-card" aria-labelledby="local-match-heading">
+      <h2 id="local-match-heading">Match setup</h2>
+      <details class="online-custom-settings">
+        <summary>Customize match (optional)</summary>
+        <label class="custom-rule-picker" for="local-routing">
+          Board routing
+          <select id="local-routing">
+            <option value="normal">Classic: your square sends the next player</option>
+            <option value="mirror">Mirrored: send them to the opposite square</option>
+            <option value="free">Free choice: either player may pick any open board</option>
+            <option value="center">Center: send them to the center board when it is open</option>
+            <option value="random">Random: the game picks an open board for the next player</option>
+            <option value="same_row">Same row: choose any open board in that row</option>
+            <option value="same_column">Same column: choose any open board in that column</option>
+            <option value="clockwise">Clockwise: send them to the next open outer board</option>
+          </select>
+        </label>
+
+        <label class="custom-rule-picker" for="first-player">
+          First turn
+          <select id="first-player">
+            <option value="X">Player 1 (X)</option>
+            <option value="O">Player 2 (O)</option>
+          </select>
+        </label>
+
+        <label class="custom-rule-picker" for="start-board">
+          Starting board
+          <select id="start-board">
+            <option value="-1">Any open board</option>
+            <option value="0">Top-left</option>
+            <option value="1">Top-middle</option>
+            <option value="2">Top-right</option>
+            <option value="3">Middle-left</option>
+            <option value="4">Center</option>
+            <option value="5">Middle-right</option>
+            <option value="6">Bottom-left</option>
+            <option value="7">Bottom-middle</option>
+            <option value="8">Bottom-right</option>
+          </select>
+        </label>
+
+        <details class="online-custom-settings">
+          <summary>Set up a custom board</summary>
+          <p class="setup-help">Add X/O starting marks or unavailable squares. Click a square to cycle empty → X → O → unavailable.</p>
+          <div id="starting-board" class="challenge-board" aria-label="Starting board editor"></div>
+          <button id="clear-starting-board" class="clear-handicap" type="button">Clear starting board</button>
+        </details>
+      </details>
+
+      <p id="local-error" class="online-error" role="alert" hidden></p>
+      <button id="start-local-match" class="start-button" type="button">Start match</button>
+      <a class="home-link" href="mainMenu.html">Back to main menu</a>
+    </section>
+  </main>
+  <script src="localSetup.js" defer></script>
+</body>
+</html>

@@ -24,6 +24,10 @@ const progressCopy = document.querySelector("#progress-copy");
 const progressFill = document.querySelector("#progress-fill");
 const progressBar = document.querySelector(".progress-track");
 const challengeForm = document.querySelector("#challenge-form");
+const challengeTextFields = [
+  document.querySelector("#challenge-name"),
+  document.querySelector("#challenge-description")
+];
 const challengeBoard = document.querySelector("#challenge-board");
 const challengeFormStatus = document.querySelector("#challenge-form-status");
 const challengeRating = document.querySelector("#challenge-rating");
@@ -91,6 +95,21 @@ function containsBannedWords(value) {
   return BANNED_WORDS.some((word) => normalized.includes(word));
 }
 
+function containsDisallowedChallengeCharacters(value) {
+  return /[*;'"`<>\\]/.test(value) || /--|\/\*|\*\//.test(value);
+}
+
+challengeTextFields.forEach((field) => {
+  field.addEventListener("input", () => {
+    const filteredValue = field.value.replace(/[*;'"`<>\\]/g, "").replace(/--/g, "-");
+    if (filteredValue !== field.value) {
+      field.value = filteredValue;
+      challengeFormStatus.textContent =
+        " ";
+    }
+  });
+});
+
 function normalizeStageSetup(setup) {
   if (Array.isArray(setup)) return setup;
   if (setup === undefined || setup === null) return [];
@@ -116,11 +135,13 @@ function isValidStage(stage) {
   const setup = normalizeStageSetup(stage?.setup);
   const validRouting = [
     "normal", "mirror", "free", "center", "random",
-    "same_row", "same_column", "clockwise"
+    "same_row", "same_column", "clockwise", "ai_free", "human_free", "player_mirror"
   ];
   if (!stage || typeof stage.id !== "string" ||
     typeof stage.name !== "string" || stage.name.length > 40 ||
     typeof stage.description !== "string" || stage.description.length > 120 ||
+    containsDisallowedChallengeCharacters(stage.name) ||
+    containsDisallowedChallengeCharacters(stage.description) ||
     containsBannedWords(stage.name) || containsBannedWords(stage.description) ||
     !Number.isFinite(Number(stage.rating)) || Number(stage.rating) < 400 ||
     Number(stage.rating) > 1500 ||
@@ -401,6 +422,11 @@ challengeForm.addEventListener("submit", (event) => {
   }
   if (containsBannedWords(name) || containsBannedWords(description)) {
     challengeFormStatus.textContent = "Please remove profanity or abusive wording from the title and description.";
+    return;
+  }
+  if (containsDisallowedChallengeCharacters(name) || containsDisallowedChallengeCharacters(description)) {
+    challengeFormStatus.textContent =
+      "Use plain text in titles and descriptions; some special symbols aren't allowed.";
     return;
   }
 
